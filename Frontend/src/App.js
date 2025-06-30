@@ -1,14 +1,20 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
-import HomePage from './pages/HomePage';
-import SignInPage from './pages/SignInPage';
-import SignUpPage from './pages/SignUpPage';
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+import { ThemeProvider, createTheme } from "@mui/material/styles";
+import CssBaseline from "@mui/material/CssBaseline";
+import HomePage from "./pages/HomePage";
+import SignInPage from "./pages/SignInPage";
+import SignUpPage from "./pages/SignUpPage";
+import { useIsAuthenticated } from "./Auth/useAuth";
 
 const theme = createTheme({
   palette: {
     primary: {
-      main: '#1976d2',
+      main: "#1976d2",
     },
     secondary: {
       main: '#dc004e',
@@ -23,16 +29,38 @@ const theme = createTheme({
 });
 
 function App() {
+  const isAuthenticated = useIsAuthenticated();
+  console.log("auth", isAuthenticated);
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Router>
         <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/signin" element={<SignInPage />} />
-          <Route path="/signup" element={<SignUpPage />} />
+          <Route
+            path="/"
+            element={
+              isAuthenticated ? <HomePage /> : <Navigate to="/signin" replace />
+            }
+          />
+
+          {/* If not authenticated, allow signin/signup access; otherwise redirect to / */}
+          <Route
+            path="/signin"
+            element={
+              !isAuthenticated ? <SignInPage /> : <Navigate to="/" replace />
+            }
+          />
+          <Route
+            path="/signup"
+            element={
+              !isAuthenticated ? <SignUpPage /> : <Navigate to="/" replace />
+            }
+          />
+
+          {/* Catch-all route */}
           <Route path="*" element={<Navigate to="/" replace />} />
-          {/* Add more routes as needed */}
+          
         </Routes>
       </Router>
     </ThemeProvider>
