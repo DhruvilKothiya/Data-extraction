@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Button,
@@ -14,6 +14,7 @@ import {
 } from "@mui/material";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 const SignInPage = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -22,10 +23,30 @@ const SignInPage = () => {
   const theme = useTheme();
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+
+
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Handle sign in logic here
-    console.log("Sign in with:", { email, password });
+
+    try {
+      const response = await axios.post(
+        `${process.env.REACT_APP_API_URL}/login`,
+        {
+          email,
+          password,
+        }
+      );
+
+      const token = response.data.access_token;
+      localStorage.setItem("token", token);
+      localStorage.setItem("User", JSON.stringify(response.data));
+
+      alert("Login successful!");
+      navigate("/");
+    } catch (err) {
+      alert("Login failed: " + (err.response?.data?.detail || err.message));
+    }
   };
 
   const handleClickShowPassword = () => {
@@ -128,10 +149,6 @@ const SignInPage = () => {
                 borderRadius: 1,
                 textTransform: "none",
                 fontSize: "1rem",
-              }}
-              onClick={(e) => {
-                e.preventDefault();
-                navigate("/");
               }}
             >
               Sign In
