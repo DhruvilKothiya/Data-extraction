@@ -11,17 +11,10 @@ import {
   TextField,
   Typography,
   useTheme,
-  FormControlLabel,
-  Checkbox,
 } from "@mui/material";
-import {
-  Visibility,
-  VisibilityOff,
-  Google,
-  GitHub,
-  Twitter,
-} from "@mui/icons-material";
+import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 const SignUpPage = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -38,15 +31,6 @@ const SignUpPage = () => {
   const theme = useTheme();
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    // Handle sign up logic here
-    if (formData.password !== formData.confirmPassword) {
-      alert("Passwords don't match!");
-      return;
-    }
-    console.log("Sign up with:", formData);
-  };
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -62,6 +46,34 @@ const SignUpPage = () => {
 
   const handleClickShowConfirmPassword = () => {
     setShowConfirmPassword(!showConfirmPassword);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (formData.password !== formData.confirmPassword) {
+      alert("Passwords don't match!");
+      return;
+    }
+
+    try {
+      const response = await axios.post(
+        `${process.env.REACT_APP_API_URL}/signup`,
+        {
+          first_name: formData.firstName,
+          last_name: formData.lastName,
+          email: formData.email,
+          password: formData.password,
+          terms_accepted: formData.termsAccepted,
+        }
+      );
+
+      alert("User registered successfully!");
+      navigate("/signin");
+    } catch (error) {
+      console.error("Signup failed:", error.response?.data || error.message);
+      alert("Signup failed. Please try again.");
+    }
   };
 
   return (
@@ -204,10 +216,7 @@ const SignUpPage = () => {
               <Link
                 href="#"
                 variant="body2"
-                onClick={(e) => {
-                e.preventDefault();
-                navigate("/signin");
-              }}
+                onClick={() => navigate("/signin")}
               >
                 Sign in
               </Link>
