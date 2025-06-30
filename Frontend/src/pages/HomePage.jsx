@@ -86,6 +86,7 @@ const HomePage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [profileAnchorEl, setProfileAnchorEl] = useState(null);
   const menuRef = useRef(null);
   const navigate = useNavigate();
 
@@ -97,11 +98,8 @@ const HomePage = () => {
         setSelectedUser(null);
       }
     };
-
     document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const handleChangeRowsPerPage = (event) => {
@@ -140,11 +138,26 @@ const HomePage = () => {
     handleMenuClose();
   };
 
-  const filteredUsers = users.filter(
-    (user) =>
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.role.toLowerCase().includes(searchTerm.toLowerCase())
+  // Profile dropdown handlers
+  const handleProfileMenuOpen = (event) => {
+    setProfileAnchorEl(event.currentTarget);
+  };
+
+  const handleProfileMenuClose = () => {
+    setProfileAnchorEl(null);
+  };
+
+  const handleLogout = () => {
+    console.log("Logged out");
+    localStorage.clear()
+    handleProfileMenuClose();
+    navigate("/signin");
+  };
+
+  const filteredUsers = users.filter((user) =>
+    [user.name, user.company, user.role].some((field) =>
+      field.toLowerCase().includes(searchTerm.toLowerCase())
+    )
   );
 
   const paginatedUsers = filteredUsers.slice(
@@ -222,187 +235,193 @@ const HomePage = () => {
             zIndex: 1100,
           }}
         >
-        <Typography variant="h5" component="h1" sx={{ fontWeight: "bold" }}>
-          Company
-        </Typography> 
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-          <IconButton>
-            <Badge badgeContent={2} color="error">
-              <NotificationsIcon />
-            </Badge>
-          </IconButton>
-          <Avatar sx={{ width: 32, height: 32 }}>
-            <PersonIcon />
-          </Avatar>
+          <Typography variant="h5" component="h1" sx={{ fontWeight: "bold" }}>
+            Company
+          </Typography>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            <IconButton>
+              <Badge badgeContent={2} color="error">
+                <NotificationsIcon />
+              </Badge>
+            </IconButton>
+            <IconButton onClick={handleProfileMenuOpen}>
+              <Avatar sx={{ width: 32, height: 32 }}>
+                <PersonIcon />
+              </Avatar>
+            </IconButton>
+          </Box>
         </Box>
-      </Box>
 
       {/* Main Content */}
-      <Container maxWidth="lg" sx={{ mt: 4, flex: 1 }}>
-        <Card sx={{ borderRadius: 2, boxShadow: 3 }}>
-          <CardContent>
+        <Container maxWidth="lg" sx={{ mt: 4, flex: 1 }}>
+          <Card sx={{ borderRadius: 2, boxShadow: 3 }}>
+            <CardContent>
             <Box
               sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}
             >
-              <TextField
-                placeholder="Search user..."
-                variant="outlined"
-                size="small"
-                value={searchTerm}
-                onChange={handleSearch}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon />
-                    </InputAdornment>
-                  ),
-                }}
-                sx={{ width: 300 }}
-              />
-              <IconButton>
-                <FilterIcon />
-              </IconButton>
-            </Box>
+                <TextField
+                  placeholder="Search user..."
+                  variant="outlined"
+                  size="small"
+                  value={searchTerm}
+                  onChange={handleSearch}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <SearchIcon />
+                      </InputAdornment>
+                    ),
+                  }}
+                  sx={{ width: 300 }}
+                />
+                <IconButton>
+                  <FilterIcon />
+                </IconButton>
+              </Box>
 
-            <TableContainer component={Paper} elevation={0}>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Name</TableCell>
-                    <TableCell>Company</TableCell>
-                    <TableCell>Role</TableCell>
-                    <TableCell>Verified</TableCell>
-                    <TableCell>Status</TableCell>
-                    <TableCell>Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {paginatedUsers.map((user) => (
-                    <TableRow key={user.id} hover>
-                      <TableCell>
+              <TableContainer component={Paper} elevation={0}>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Name</TableCell>
+                      <TableCell>Company</TableCell>
+                      <TableCell>Role</TableCell>
+                      <TableCell>Verified</TableCell>
+                      <TableCell>Status</TableCell>
+                      <TableCell>Actions</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {paginatedUsers.map((user) => (
+                      <TableRow key={user.id} hover>
+                        <TableCell>
                         <Box
                           sx={{ display: "flex", alignItems: "center", gap: 2 }}
                         >
-                          <Avatar>{user.name.charAt(0)}</Avatar>
-                          {user.name}
-                        </Box>
-                      </TableCell>
-                      <TableCell>{user.company}</TableCell>
-                      <TableCell>{user.role}</TableCell>
-                      <TableCell>
-                        {user.verified ? <CheckIcon color="success" /> : "X"}
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={
-                            user.status.charAt(0).toUpperCase() +
-                            user.status.slice(1)
-                          }
-                          color={
-                            user.status === "Done" 
-                              ? "success" 
-                              : user.status === "In Process" 
-                                ? "warning" 
+                            <Avatar>{user.name.charAt(0)}</Avatar>
+                            {user.name}
+                          </Box>
+                        </TableCell>
+                        <TableCell>{user.company}</TableCell>
+                        <TableCell>{user.role}</TableCell>
+                        <TableCell>
+                          {user.verified ? <CheckIcon color="success" /> : "X"}
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            label={user.status}
+                            color={
+                              user.status === "Done"
+                                ? "success"
+                                : user.status === "In Process"
+                                ? "warning"
                                 : "error"
-                          }
-                          size="small"
-                          sx={{
-                            borderRadius: 1,
-                            textTransform: "capitalize",
-                            width: "auto",
-                          }}
-                        />
-                      </TableCell>
-                      <TableCell align="right">
-                        <IconButton
-                          size="small"
-                          onClick={(e) => handleMenuOpen(e, user)}
+                            }
+                            size="small"
+                            sx={{
+                              borderRadius: 1,
+                              textTransform: "capitalize",
+                              width: "auto",
+                            }}
+                          />
+                        </TableCell>
+                        <TableCell align="right">
+                          <IconButton
+                            size="small"
+                            onClick={(e) => handleMenuOpen(e, user)}
                           sx={{
                             "&:hover": {
                               backgroundColor: "rgba(0, 0, 0, 0.04)",
                             },
                           }}
-                        >
-                          <MoreVertIcon fontSize="small" />
-                        </IconButton>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
+                          >
+                            <MoreVertIcon fontSize="small" />
+                          </IconButton>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
 
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                mt: 2,
-              }}
-            >
-              <Box sx={{ display: "flex", alignItems: "center" }}>
-                <Typography variant="body2" color="text.secondary">
-                  Rows per page:
-                </Typography>
-                <Select
-                  value={rowsPerPage}
-                  onChange={handleChangeRowsPerPage}
-                  size="small"
-                  sx={{ ml: 1, "& .MuiSelect-select": { py: 0.5 } }}
-                  variant="standard"
-                >
-                  <MenuItem value={5}>5</MenuItem>
-                  <MenuItem value={10}>10</MenuItem>
-                  <MenuItem value={25}>25</MenuItem>
-                </Select>
-              </Box>
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  mt: 2,
+                }}
+              >
+                <Box sx={{ display: "flex", alignItems: "center" }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Rows per page:
+                  </Typography>
+                  <Select
+                    value={rowsPerPage}
+                    onChange={handleChangeRowsPerPage}
+                    size="small"
+                    sx={{ ml: 1, "& .MuiSelect-select": { py: 0.5 } }}
+                    variant="standard"
+                  >
+                    <MenuItem value={5}>5</MenuItem>
+                    <MenuItem value={10}>10</MenuItem>
+                    <MenuItem value={25}>25</MenuItem>
+                  </Select>
+                </Box>
 
-              <Box sx={{ display: "flex", alignItems: "center" }}>
-                <Typography variant="body2" color="text.secondary">
-                  {`${page * rowsPerPage + 1}-${Math.min(
-                    (page + 1) * rowsPerPage,
-                    filteredUsers.length
-                  )} of ${filteredUsers.length}`}
-                </Typography>
-                <IconButton
-                  onClick={() => setPage((prev) => Math.max(prev - 1, 0))}
-                  disabled={page === 0}
-                  size="small"
-                >
-                  <ArrowBackIosIcon fontSize="small" />
-                </IconButton>
-                <IconButton
-                  onClick={() =>
+                <Box sx={{ display: "flex", alignItems: "center" }}>
+                  <Typography variant="body2" color="text.secondary">
+                    {`${page * rowsPerPage + 1}-${Math.min(
+                      (page + 1) * rowsPerPage,
+                      filteredUsers.length
+                    )} of ${filteredUsers.length}`}
+                  </Typography>
+                  <IconButton onClick={() => setPage((prev) => Math.max(prev - 1, 0))} disabled={page === 0} size="small">
+                    <ArrowBackIosIcon fontSize="small" />
+                  </IconButton>
+                  <IconButton
+                    onClick={() =>
                     setPage((prev) =>
                       Math.min(
                         prev + 1,
                         Math.ceil(filteredUsers.length / rowsPerPage) - 1
                       )
                     )
-                  }
+                    }
                   disabled={
                     page >= Math.ceil(filteredUsers.length / rowsPerPage) - 1
                   }
-                  size="small"
-                >
-                  <ArrowForwardIosIcon fontSize="small" />
-                </IconButton>
+                    size="small"
+                  >
+                    <ArrowForwardIosIcon fontSize="small" />
+                  </IconButton>
+                </Box>
               </Box>
-            </Box>
-          </CardContent>
-        </Card>
-      </Container>
+            </CardContent>
+          </Card>
+        </Container>
 
       {/* Action Menu */}
-      <div ref={menuRef}>
-        <ActionMenu
-          anchorEl={anchorEl}
-          onClose={handleMenuClose}
-          onEdit={() => handleEdit(selectedUser)}
-          onDelete={() => handleDelete(selectedUser)}
-        />
-      </div>
+        <div ref={menuRef}>
+          <ActionMenu
+            anchorEl={anchorEl}
+            onClose={handleMenuClose}
+            onEdit={() => handleEdit(selectedUser)}
+            onDelete={() => handleDelete(selectedUser)}
+          />
+        </div>
       </Box>
+
+      {/* Profile Dropdown */}
+      <Menu
+        anchorEl={profileAnchorEl}
+        open={Boolean(profileAnchorEl)}
+        onClose={handleProfileMenuClose}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+        transformOrigin={{ vertical: "top", horizontal: "right" }}
+      >
+        <MenuItem onClick={handleLogout}>Logout</MenuItem>
+      </Menu>
     </Box>
   );
 };
