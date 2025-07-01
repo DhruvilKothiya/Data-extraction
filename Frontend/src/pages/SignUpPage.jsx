@@ -15,6 +15,7 @@ import {
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { toast } from "react-toastify"; 
 
 const SignUpPage = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -30,7 +31,6 @@ const SignUpPage = () => {
 
   const theme = useTheme();
   const navigate = useNavigate();
-
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -52,7 +52,7 @@ const SignUpPage = () => {
     e.preventDefault();
 
     if (formData.password !== formData.confirmPassword) {
-      alert("Passwords don't match!");
+      toast.error("Passwords don't match!"); 
       return;
     }
 
@@ -68,11 +68,11 @@ const SignUpPage = () => {
         }
       );
 
-      alert("User registered successfully!");
+      toast.success("User registered successfully!"); 
       navigate("/signin");
     } catch (error) {
       console.error("Signup failed:", error.response?.data || error.message);
-      alert("Signup failed. Please try again.");
+      toast.error("Signup failed. Please try again.");
     }
   };
 
@@ -183,6 +183,7 @@ const SignUpPage = () => {
               }}
               sx={{ mb: 2 }}
             />
+
             <Button
               fullWidth
               type="submit"

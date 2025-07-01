@@ -9,7 +9,10 @@ import CssBaseline from "@mui/material/CssBaseline";
 import HomePage from "./pages/HomePage";
 import SignInPage from "./pages/SignInPage";
 import SignUpPage from "./pages/SignUpPage";
-import { useIsAuthenticated } from "./Auth/useAuth";
+import PrivateRoute from "./Auth/PrivateRoute";
+import PublicRoute from "./Auth/PublicRoute";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 
 const theme = createTheme({
   palette: {
@@ -17,21 +20,18 @@ const theme = createTheme({
       main: "#1976d2",
     },
     secondary: {
-      main: '#dc004e',
+      main: "#dc004e",
     },
   },
   typography: {
     fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
     button: {
-      textTransform: 'none',
+      textTransform: "none",
     },
   },
 });
 
 function App() {
-  const isAuthenticated = useIsAuthenticated();
-  console.log("auth", isAuthenticated);
-
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
@@ -40,15 +40,17 @@ function App() {
           <Route
             path="/"
             element={
-              isAuthenticated ? <HomePage /> : <Navigate to="/signin" replace />
+              <PrivateRoute>
+                <HomePage />
+              </PrivateRoute>
             }
           />
-
-          {/* If not authenticated, allow signin/signup access; otherwise redirect to / */}
           <Route
             path="/signin"
             element={
-              !isAuthenticated ? <SignInPage /> : <Navigate to="/" replace />
+              <PublicRoute>
+                <SignInPage />
+              </PublicRoute>
             }
           />
           <Route

@@ -283,9 +283,9 @@ const HomePage = () => {
                 <Table>
                   <TableHead>
                     <TableRow>
-                      <TableCell>Name</TableCell>
-                      <TableCell>Company</TableCell>
-                      <TableCell>Role</TableCell>
+                      <TableCell>Comapy Name</TableCell>
+                      <TableCell>Rating</TableCell>
+                      <TableCell>Key Financial Data6</TableCell>
                       <TableCell>Verified</TableCell>
                       <TableCell>Status</TableCell>
                       <TableCell>Actions</TableCell>
