@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   Box,
   Button,
@@ -15,6 +15,7 @@ import {
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { toast } from "react-toastify"; // ✅ Toastify import
 
 const SignInPage = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -23,15 +24,12 @@ const SignInPage = () => {
   const theme = useTheme();
   const navigate = useNavigate();
 
-
-
-
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
       const response = await axios.post(
-        `${process.env.REACT_APP_API_URL}/login`,
+        `${process.env.REACT_APP_API_URL}/signin`,
         {
           email,
           password,
@@ -42,10 +40,12 @@ const SignInPage = () => {
       localStorage.setItem("token", token);
       localStorage.setItem("User", JSON.stringify(response.data));
 
-      alert("Login successful!");
+      toast.success("Login successful!"); 
       navigate("/");
     } catch (err) {
-      alert("Login failed: " + (err.response?.data?.detail || err.message));
+      toast.error(
+        "Login failed: " + (err.response?.data?.detail || err.message)
+      ); 
     }
   };
 
@@ -131,7 +131,7 @@ const SignInPage = () => {
                 variant="body2"
                 onClick={(e) => {
                   e.preventDefault();
-                  // Handle forgot password
+                  navigate("/forgot-password");
                 }}
               >
                 Forgot password?

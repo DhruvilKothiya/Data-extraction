@@ -54,11 +54,27 @@ function App() {
           <Route
             path="/signup"
             element={
-              !isAuthenticated ? <SignUpPage /> : <Navigate to="/" replace />
+              <PublicRoute>
+                <SignUpPage />
+              </PublicRoute>
             }
           />
-
-          {/* Catch-all route */}
+          <Route
+            path="/forgot-password"
+            element={
+              <PublicRoute>
+                <ForgotPasswordPage />
+              </PublicRoute>
+            }
+          />
+          <Route
+            path="/reset-password"
+            element={
+              <PublicRoute>
+                <ResetPasswordPage />
+              </PublicRoute>
+            }
+          />
           <Route path="*" element={<Navigate to="/" replace />} />
           
         </Routes>

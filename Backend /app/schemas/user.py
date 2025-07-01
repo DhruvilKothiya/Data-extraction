@@ -23,3 +23,11 @@ class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
+# schemas/user.py
+class EmailSchema(BaseModel):
+    email: EmailStr
+
+class ResetPasswordSchema(BaseModel):
+    token: str
+    new_password: str
+

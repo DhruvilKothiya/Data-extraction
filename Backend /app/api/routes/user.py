@@ -1,10 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException
+import os
+from decouple import config 
+from fastapi import APIRouter, Depends, HTTPException,Request
 from sqlalchemy.orm import Session
 from app.db.session import SessionLocal
-from app.utils.jwt import create_access_token
+from app.utils.jwt import create_access_token, decode_token
 from app.schemas.user import *
 from app.crud.user import create_user
 from app.models.user import User
+from app.utils.email import send_reset_email
 from passlib.context import CryptContext
 
 
@@ -28,7 +31,7 @@ def signup(user: UserCreate, db: Session = Depends(get_db)):
     return create_user(db, user)
 
 
-@router.post("/login")
+@router.post("/signin")
 def login(user: UserLogin, db: Session = Depends(get_db)):
     db_user = db.query(User).filter(User.email == user.email).first()
     if not db_user or not verify_password(user.password, db_user.password):
@@ -42,3 +45,38 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
         "email": db_user.email,
     }
     return {"access_token": token, "token_type": "bearer","user": user_data}
+
+
+@router.post("/forgot-password")
+def forgot_password(request_data: EmailSchema, request: Request, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == request_data.email).first()
+    print("user",user)
+    if not user:
+        raise HTTPException(status_code=404, detail="Email not registered")
+
+    token = create_access_token(data={"sub": user.email})
+    frontend_base_url = config("FRONTEND_BASE_URL")  
+    reset_link = f"{frontend_base_url}/reset-password?token={token}"
+    send_reset_email(user.email, reset_link)
+
+    return {"msg": "Password reset link sent to your email"}
+
+@router.post("/reset-password")
+def reset_password(data: ResetPasswordSchema, db: Session = Depends(get_db)):
+    try:
+        payload = decode_token(data.token)
+        email = payload.get("sub")
+        if not email:
+            raise HTTPException(status_code=400, detail="Invalid token")
+    except:
+        raise HTTPException(status_code=400, detail="Token is invalid or expired")
+
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    hashed_password = pwd_context.hash(data.new_password)
+    user.password = hashed_password
+    db.commit()
+    return {"msg": "Password updated successfully"}
+
