@@ -9,7 +9,7 @@ from app.crud.user import create_user
 from app.models.user import User
 from app.utils.email import send_reset_email
 from passlib.context import CryptContext
-
+from app.models.company import CompanyData 
 
 router = APIRouter()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -80,3 +80,21 @@ def reset_password(data: ResetPasswordSchema, db: Session = Depends(get_db)):
     db.commit()
     return {"msg": "Password updated successfully"}
 
+@router.get("/company-data")
+def get_company_data(db: Session = Depends(get_db)):
+    companies = db.query(CompanyData).all()
+    return [
+        {
+            "id": c.id,
+            "selected": c.selected,
+            "identifier": c.identifier,
+            "company_name": c.company_name,
+            "rating": c.rating,
+            "key_financial_data": c.key_financial_data,
+            "downloaded_pdfs": c.downloaded_pdfs,
+            "pension_summary": c.pension_summary,
+            "director_info": c.director_info,
+            "approval_stage": c.approval_stage
+        }
+        for c in companies  # ✅ loop over each company
+    ]

@@ -36,6 +36,7 @@ import {
   ArrowBackIos as ArrowBackIosIcon,
   ArrowForwardIos as ArrowForwardIosIcon,
 } from "@mui/icons-material";
+import axios from "axios";
 
 const users = [
   {
@@ -87,6 +88,7 @@ const HomePage = () => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
   const [profileAnchorEl, setProfileAnchorEl] = useState(null);
+  const [companyData, setCompanyData] = useState([]);
   const menuRef = useRef(null);
   const navigate = useNavigate();
 
@@ -149,7 +151,7 @@ const HomePage = () => {
 
   const handleLogout = () => {
     console.log("Logged out");
-    localStorage.clear()
+    localStorage.clear();
     handleProfileMenuClose();
     navigate("/signin");
   };
@@ -214,13 +216,41 @@ const HomePage = () => {
     </Menu>
   );
 
+  useEffect(() => {
+    const fetchCompanyData = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await axios.get(
+          `${process.env.REACT_APP_API_URL}/company-data`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        setCompanyData(response.data);
+      } catch (error) {
+        console.error("Error fetching company data:", error);
+      }
+    };
+
+    fetchCompanyData();
+  }, []);
+
   return (
     <Box sx={{ display: "flex", minHeight: "100vh" }}>
       {/* Sidebar */}
       <Sidebar />
-      
+
       {/* Main Content */}
-      <Box sx={{ flexGrow: 1, ml: '280px', display: 'flex', flexDirection: 'column' }}>
+      <Box
+        sx={{
+          flexGrow: 1,
+          ml: "280px",
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
         {/* Header */}
         <Box
           sx={{
@@ -230,7 +260,7 @@ const HomePage = () => {
             p: 2,
             borderBottom: "1px solid #e0e0e0",
             backgroundColor: "white",
-            position: 'sticky',
+            position: "sticky",
             top: 0,
             zIndex: 1100,
           }}
@@ -252,13 +282,13 @@ const HomePage = () => {
           </Box>
         </Box>
 
-      {/* Main Content */}
+        {/* Main Content */}
         <Container maxWidth="lg" sx={{ mt: 4, flex: 1 }}>
           <Card sx={{ borderRadius: 2, boxShadow: 3 }}>
             <CardContent>
-            <Box
-              sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}
-            >
+              <Box
+                sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}
+              >
                 <TextField
                   placeholder="Search user..."
                   variant="outlined"
@@ -283,63 +313,55 @@ const HomePage = () => {
                 <Table>
                   <TableHead>
                     <TableRow>
-                      <TableCell>Comapy Name</TableCell>
+                      <TableCell>Company Name</TableCell>
                       <TableCell>Rating</TableCell>
-                      <TableCell>Key Financial Data6</TableCell>
-                      <TableCell>Verified</TableCell>
-                      <TableCell>Status</TableCell>
-                      <TableCell>Actions</TableCell>
+                      <TableCell>Key Financial Data</TableCell>
+                      <TableCell>PDFs</TableCell>
+                      <TableCell>Pension Summary</TableCell>
+                      <TableCell>Director Info</TableCell>
+                      <TableCell>Approval Stage</TableCell>
                     </TableRow>
                   </TableHead>
+
                   <TableBody>
-                    {paginatedUsers.map((user) => (
-                      <TableRow key={user.id} hover>
-                        <TableCell>
-                        <Box
-                          sx={{ display: "flex", alignItems: "center", gap: 2 }}
-                        >
-                            <Avatar>{user.name.charAt(0)}</Avatar>
-                            {user.name}
-                          </Box>
-                        </TableCell>
-                        <TableCell>{user.company}</TableCell>
-                        <TableCell>{user.role}</TableCell>
-                        <TableCell>
-                          {user.verified ? <CheckIcon color="success" /> : "X"}
-                        </TableCell>
-                        <TableCell>
-                          <Chip
-                            label={user.status}
-                            color={
-                              user.status === "Done"
-                                ? "success"
-                                : user.status === "In Process"
-                                ? "warning"
-                                : "error"
-                            }
-                            size="small"
-                            sx={{
-                              borderRadius: 1,
-                              textTransform: "capitalize",
-                              width: "auto",
-                            }}
-                          />
-                        </TableCell>
-                        <TableCell align="right">
-                          <IconButton
-                            size="small"
-                            onClick={(e) => handleMenuOpen(e, user)}
-                          sx={{
-                            "&:hover": {
-                              backgroundColor: "rgba(0, 0, 0, 0.04)",
-                            },
-                          }}
-                          >
-                            <MoreVertIcon fontSize="small" />
-                          </IconButton>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {companyData
+                      .slice(
+                        page * rowsPerPage,
+                        page * rowsPerPage + rowsPerPage
+                      )
+                      .map((company) => (
+                        <TableRow key={company.id}>
+                          <TableCell>{company.company_name}</TableCell>
+                          <TableCell>{company.rating}</TableCell>
+                          <TableCell>
+                            <a
+                              href={company.key_financial_data}
+                              target="_black"
+                              rel="noopener noreferrer"
+                            >
+                              View
+                            </a>
+                          </TableCell>
+                          <TableCell>
+                            <a
+                              href={company.downloaded_pdfs}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              View PDF
+                            </a>
+                          </TableCell>
+                          <TableCell>{company.pension_summary}</TableCell>
+                          <TableCell> <a
+                              href={company.director_info}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              View 
+                            </a></TableCell>
+                          <TableCell>{company.approval_stage}</TableCell>
+                        </TableRow>
+                      ))}
                   </TableBody>
                 </Table>
               </TableContainer>
@@ -376,21 +398,25 @@ const HomePage = () => {
                       filteredUsers.length
                     )} of ${filteredUsers.length}`}
                   </Typography>
-                  <IconButton onClick={() => setPage((prev) => Math.max(prev - 1, 0))} disabled={page === 0} size="small">
+                  <IconButton
+                    onClick={() => setPage((prev) => Math.max(prev - 1, 0))}
+                    disabled={page === 0}
+                    size="small"
+                  >
                     <ArrowBackIosIcon fontSize="small" />
                   </IconButton>
                   <IconButton
                     onClick={() =>
-                    setPage((prev) =>
-                      Math.min(
-                        prev + 1,
-                        Math.ceil(filteredUsers.length / rowsPerPage) - 1
+                      setPage((prev) =>
+                        Math.min(
+                          prev + 1,
+                          Math.ceil(filteredUsers.length / rowsPerPage) - 1
+                        )
                       )
-                    )
                     }
-                  disabled={
-                    page >= Math.ceil(filteredUsers.length / rowsPerPage) - 1
-                  }
+                    disabled={
+                      page >= Math.ceil(filteredUsers.length / rowsPerPage) - 1
+                    }
                     size="small"
                   >
                     <ArrowForwardIosIcon fontSize="small" />
@@ -401,7 +427,7 @@ const HomePage = () => {
           </Card>
         </Container>
 
-      {/* Action Menu */}
+        {/* Action Menu */}
         <div ref={menuRef}>
           <ActionMenu
             anchorEl={anchorEl}
