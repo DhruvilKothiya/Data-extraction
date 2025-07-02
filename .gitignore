@@ -1,0 +1,58 @@
+# Python cache and compiled files
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+*.log
+
+# Virtual environment
+venv/
+ENV/
+env/
+.venv/
+.Python
+
+# Environment variables and secrets
+.env
+.env.*
+
+# Alembic migration cache (keep versions folder, ignore pyc and cache)
+alembic/versions/*.pyc
+alembic/versions/__pycache__/
+alembic/__pycache__/
+
+# IDEs and Editors
+.vscode/
+.idea/
+*.swp
+
+# macOS and Windows system files
+.DS_Store
+Thumbs.db
+
+# Test/coverage outputs
+htmlcov/
+coverage.xml
+.pytest_cache/
+.cache/
+
+# Uvicorn logs
+*.log
+
+# MySQL/PostgreSQL dumps or temp files
+*.sql
+*.dump
+
+# Jupyter Notebook checkpoints (if you use notebooks for prototyping)
+.ipynb_checkpoints/
+
+# Node modules (if you have a frontend in the same repo)
+node_modules/
+
+# Miscellaneous
+*.bak
+*.tmp
+
+package-lock.json
