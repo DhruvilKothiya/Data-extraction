@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
+import UploadIcon from "@mui/icons-material/CloudUpload";
+
 import {
   Box,
   Button,
@@ -37,6 +39,7 @@ import {
   ArrowForwardIos as ArrowForwardIosIcon,
 } from "@mui/icons-material";
 import axios from "axios";
+import { toast } from "react-toastify";
 
 const users = [
   {
@@ -89,6 +92,10 @@ const HomePage = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [profileAnchorEl, setProfileAnchorEl] = useState(null);
   const [companyData, setCompanyData] = useState([]);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploading, setUploading] = useState(false);
+  const [uploadedFileName, setUploadedFileName] = useState("");
+
   const menuRef = useRef(null);
   const navigate = useNavigate();
 
@@ -237,6 +244,44 @@ const HomePage = () => {
     fetchCompanyData();
   }, []);
 
+  const handleCSVUpload = async (file) => {
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const token = localStorage.getItem("token");
+      setUploading(true);
+      const response = await axios.post(
+        `${process.env.REACT_APP_API_URL}/upload-file`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${token}`,
+          },
+          onUploadProgress: (progressEvent) => {
+            const percent = Math.round(
+              (progressEvent.loaded * 100) / progressEvent.total
+            );
+            setUploadProgress(percent);
+          },
+        }
+      );
+
+      setUploadProgress(0);
+      setUploadedFileName("");
+      setUploading(false);
+      setUploadedFileName(response.data.filename);
+      toast.success("Uploded Successfully");
+    } catch (error) {
+      setUploading(false);
+      toast.error("File upload failed");
+      console.error("Upload error:", error);
+    }
+  };
+
   return (
     <Box sx={{ display: "flex", minHeight: "100vh" }}>
       {/* Sidebar */}
@@ -286,6 +331,79 @@ const HomePage = () => {
         <Container maxWidth="lg" sx={{ mt: 4, flex: 1 }}>
           <Card sx={{ borderRadius: 2, boxShadow: 3 }}>
             <CardContent>
+              <Box
+                sx={{
+                  border: "2px dashed #aaa",
+                  borderRadius: 2,
+                  p: 4,
+                  textAlign: "center",
+                  backgroundColor: "#f5f5f5",
+                  mb: 4,
+                  position: "relative",
+                }}
+              >
+                <input
+                  type="file"
+                  id="csv-upload"
+                  accept=".csv,text/csv"
+                  hidden
+                  onChange={(e) => {
+                    const selectedFile = e.target.files[0];
+                    if (selectedFile) {
+                      setUploadedFileName(selectedFile.name); // Show name before upload
+                      handleCSVUpload(selectedFile);
+                    }
+                  }}
+                />
+                <label htmlFor="csv-upload" style={{ cursor: "pointer" }}>
+                  <Box sx={{ display: "flex", justifyContent: "center" }}>
+                    <UploadIcon sx={{ fontSize: 40, mb: 1 }} />
+                  </Box>
+                  <Button variant="outlined" component="span">
+                    Choose CSV File to Upload
+                  </Button>
+                  <Typography variant="body2" mt={1}>
+                    or drag and drop your CSV here
+                  </Typography>
+                  {uploadedFileName && (
+                    <Typography
+                      variant="body2"
+                      mt={1}
+                      sx={{ color: "green", fontWeight: 500 }}
+                    >
+                      Uploaded File: {uploadedFileName}
+                    </Typography>
+                  )}
+                </label>
+
+                {/* Progress Bar */}
+                {uploading && (
+                  <Box sx={{ mt: 2 }}>
+                    <Typography variant="body2">
+                      {uploadProgress}% uploaded
+                    </Typography>
+                    <Box
+                      sx={{
+                        height: 8,
+                        backgroundColor: "#ddd",
+                        borderRadius: 4,
+                        overflow: "hidden",
+                        mt: 1,
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          height: "100%",
+                          width: `${uploadProgress}%`,
+                          backgroundColor: "#1976d2",
+                          transition: "width 0.3s",
+                        }}
+                      />
+                    </Box>
+                  </Box>
+                )}
+              </Box>
+
               <Box
                 sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}
               >
@@ -352,13 +470,16 @@ const HomePage = () => {
                             </a>
                           </TableCell>
                           <TableCell>{company.pension_summary}</TableCell>
-                          <TableCell> <a
+                          <TableCell>
+                            {" "}
+                            <a
                               href={company.director_info}
                               target="_blank"
                               rel="noopener noreferrer"
                             >
-                              View 
-                            </a></TableCell>
+                              View
+                            </a>
+                          </TableCell>
                           <TableCell>{company.approval_stage}</TableCell>
                         </TableRow>
                       ))}
