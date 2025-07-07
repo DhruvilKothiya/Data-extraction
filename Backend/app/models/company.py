@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, Boolean, Text
+from sqlalchemy import Column, Integer, String, Boolean, Text, ForeignKey
+from sqlalchemy.orm import relationship
 from app.db.base import Base
 
 class CompanyData(Base):
@@ -6,10 +7,11 @@ class CompanyData(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     selected = Column(Boolean, default=False)
-    identifier = Column(String(20), unique=True, nullable=False)
+    identifier = Column(String(20), unique=True, nullable=True)
     company_name = Column(String(255), nullable=False)
     rating = Column(Integer)
-    key_financial_data = Column(Text)
+    key_financial_data_id = Column(Integer, ForeignKey("key_financial_data.id"))
+    key_financial_data = relationship("KeyFinancialData", backref="company")
     downloaded_pdfs = Column(Text)
     pension_summary = Column(Text)
     director_info = Column(Text)

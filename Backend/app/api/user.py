@@ -13,6 +13,7 @@ from app.models.csv_file_data import CSVFileData
 from app.utils.email import send_reset_email
 from passlib.context import CryptContext
 from app.models.company import CompanyData 
+from app.models.key_financial_data import KeyFinancialData
 import shutil
 
 router = APIRouter()
@@ -131,17 +132,20 @@ def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
 
             # Check if company already exists in company_data
             if company_name:
-                existing_company = db.query(CompanyData).filter(CompanyData.company_name == company_name).first()
-                if not existing_company:
+                exists_in_company_data = db.query(CompanyData).filter(CompanyData.company_name == company_name).first()
+                exists_in_key_financial = db.query(KeyFinancialData).filter(KeyFinancialData.company_name == company_name).first()
+
+                if not exists_in_key_financial:
+                    key_financial_data = KeyFinancialData(company_name=company_name)
+                    db.add(key_financial_data)
+                    db.flush() 
+                else:
+                    key_financial_data = exists_in_key_financial
+
+                if not exists_in_company_data:
                     company_data = CompanyData(
                         company_name=company_name,
-                        identifier=f"ID_{company_name[:5]}_{str(csv_reader.line_num)}",
-                        rating=None,
-                        key_financial_data=None,
-                        downloaded_pdfs=None,
-                        pension_summary=None,
-                        director_info=None,
-                        approval_stage=0,
+                        key_financial_data_id=key_financial_data.id 
                     )
                     db.add(company_data)
 
@@ -150,3 +154,18 @@ def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to process file: {str(e)}")
+
+@router.get("/key-financial-data/{company_id}")
+def get_key_financial_data(company_id: int, db: Session = Depends(get_db)):
+    company = db.query(CompanyData).filter(CompanyData.id == company_id).first()
+
+    if not company:
+        raise HTTPException(status_code=404, detail="Company not found")
+
+    key_data = db.query(KeyFinancialData).filter(KeyFinancialData.id == company.key_financial_data_id).first()
+
+    if not key_data:
+        raise HTTPException(status_code=404, detail="Key Financial Data not found")
+
+    return key_data
+
