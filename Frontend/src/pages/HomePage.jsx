@@ -41,48 +41,7 @@ import {
 import axios from "axios";
 import { toast } from "react-toastify";
 
-const users = [
-  {
-    id: 1,
-    name: "John Doe",
-    company: "Tech Corp",
-    role: "Admin",
-    verified: true,
-    status: "In Process",
-  },
-  {
-    id: 2,
-    name: "Jane Smith",
-    company: "Design Co",
-    role: "User",
-    verified: false,
-    status: "Not started",
-  },
-  {
-    id: 3,
-    name: "Robert Johnson",
-    company: "Finance Inc",
-    role: "Manager",
-    verified: true,
-    status: "Done",
-  },
-  {
-    id: 4,
-    name: "Emily Davis",
-    company: "Marketing Pro",
-    role: "Editor",
-    verified: true,
-    status: "Done",
-  },
-  {
-    id: 5,
-    name: "Michael Wilson",
-    company: "Tech Solutions",
-    role: "Developer",
-    verified: false,
-    status: "Not started",
-  },
-];
+const users = []; // Not used, kept if needed for future
 
 const HomePage = () => {
   const [page, setPage] = useState(0);
@@ -99,7 +58,6 @@ const HomePage = () => {
   const menuRef = useRef(null);
   const navigate = useNavigate();
 
-  // Close menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
@@ -137,17 +95,14 @@ const HomePage = () => {
 
   const handleEdit = (user) => {
     console.log("Edit user:", user);
-    // Add your edit logic here
     handleMenuClose();
   };
 
   const handleDelete = (user) => {
     console.log("Delete user:", user);
-    // Add your delete logic here
     handleMenuClose();
   };
 
-  // Profile dropdown handlers
   const handleProfileMenuOpen = (event) => {
     setProfileAnchorEl(event.currentTarget);
   };
@@ -163,31 +118,22 @@ const HomePage = () => {
     navigate("/signin");
   };
 
-  const filteredUsers = users.filter((user) =>
-    [user.name, user.company, user.role].some((field) =>
-      field.toLowerCase().includes(searchTerm.toLowerCase())
-    )
+  const filteredCompanies = companyData.filter((company) =>
+    company.company_name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const paginatedUsers = filteredUsers.slice(
+  const paginatedCompanies = filteredCompanies.slice(
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
   );
 
-  // Menu component for actions dropdown
   const ActionMenu = ({ anchorEl, onClose, onEdit, onDelete }) => (
     <Menu
       anchorEl={anchorEl}
       open={Boolean(anchorEl)}
       onClose={onClose}
-      anchorOrigin={{
-        vertical: "bottom",
-        horizontal: "right",
-      }}
-      transformOrigin={{
-        vertical: "top",
-        horizontal: "right",
-      }}
+      anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+      transformOrigin={{ vertical: "top", horizontal: "right" }}
       PaperProps={{
         style: {
           width: 120,
@@ -196,28 +142,8 @@ const HomePage = () => {
         },
       }}
     >
-      <MenuItem
-        onClick={onEdit}
-        sx={{
-          fontSize: "0.875rem",
-          color: "text.primary",
-          "&:hover": {
-            backgroundColor: "rgba(0, 0, 0, 0.04)",
-          },
-        }}
-      >
-        Edit
-      </MenuItem>
-      <MenuItem
-        onClick={onDelete}
-        sx={{
-          fontSize: "0.875rem",
-          color: "error.main",
-          "&:hover": {
-            backgroundColor: "rgba(0, 0, 0, 0.04)",
-          },
-        }}
-      >
+      <MenuItem onClick={onEdit}>Edit</MenuItem>
+      <MenuItem onClick={onDelete} sx={{ color: "error.main" }}>
         Delete
       </MenuItem>
     </Menu>
@@ -271,10 +197,9 @@ const HomePage = () => {
       );
 
       setUploadProgress(0);
-      setUploadedFileName("");
-      setUploading(false);
       setUploadedFileName(response.data.filename);
-      toast.success("Uploded Successfully");
+      setUploading(false);
+      toast.success("Uploaded Successfully");
     } catch (error) {
       setUploading(false);
       toast.error("File upload failed");
@@ -284,10 +209,8 @@ const HomePage = () => {
 
   return (
     <Box sx={{ display: "flex", minHeight: "100vh" }}>
-      {/* Sidebar */}
       <Sidebar />
 
-      {/* Main Content */}
       <Box
         sx={{
           flexGrow: 1,
@@ -296,7 +219,6 @@ const HomePage = () => {
           flexDirection: "column",
         }}
       >
-        {/* Header */}
         <Box
           sx={{
             display: "flex",
@@ -310,10 +232,10 @@ const HomePage = () => {
             zIndex: 1100,
           }}
         >
-          <Typography variant="h5" component="h1" sx={{ fontWeight: "bold" }}>
+          <Typography variant="h5" sx={{ fontWeight: "bold" }}>
             Company
           </Typography>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <Box sx={{ display: "flex", gap: 2 }}>
             <IconButton>
               <Badge badgeContent={2} color="error">
                 <NotificationsIcon />
@@ -327,7 +249,6 @@ const HomePage = () => {
           </Box>
         </Box>
 
-        {/* Main Content */}
         <Container maxWidth="lg" sx={{ mt: 4, flex: 1 }}>
           <Card sx={{ borderRadius: 2, boxShadow: 3 }}>
             <CardContent>
@@ -408,11 +329,10 @@ const HomePage = () => {
                 sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}
               >
                 <TextField
-                  placeholder="Search user..."
-                  variant="outlined"
-                  size="small"
+                  placeholder="Search company..."
                   value={searchTerm}
                   onChange={handleSearch}
+                  size="small"
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
@@ -440,60 +360,50 @@ const HomePage = () => {
                       <TableCell>Approval Stage</TableCell>
                     </TableRow>
                   </TableHead>
-
                   <TableBody>
-                    {companyData
-                      .slice(
-                        page * rowsPerPage,
-                        page * rowsPerPage + rowsPerPage
-                      )
-                      .map((company) => (
-                        <TableRow key={company.id}>
-                          <TableCell>{company.company_name}</TableCell>
-                          <TableCell>{company.rating}</TableCell>
-                          <TableCell>
-                            <a
-                              href={company.key_financial_data}
-                              target="_black"
-                              rel="noopener noreferrer"
-                            >
-                              View
-                            </a>
-                          </TableCell>
-                          <TableCell>
-                            <a
-                              href={company.downloaded_pdfs}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
-                              View PDF
-                            </a>
-                          </TableCell>
-                          <TableCell>{company.pension_summary}</TableCell>
-                          <TableCell>
-                            {" "}
-                            <a
-                              href={company.director_info}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
-                              View
-                            </a>
-                          </TableCell>
-                          <TableCell>{company.approval_stage}</TableCell>
-                        </TableRow>
-                      ))}
+                    {paginatedCompanies.map((company) => (
+                      <TableRow key={company.id}>
+                        <TableCell>{company.company_name}</TableCell>
+                        <TableCell>{company.rating}</TableCell>
+                        <TableCell>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            onClick={() =>
+                              navigate(`/company/${company.id}/financial-data`)
+                            }
+                          >
+                            View
+                          </Button>
+                        </TableCell>
+                        <TableCell>
+                          <a
+                            href={company.downloaded_pdfs}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            View PDF
+                          </a>
+                        </TableCell>
+                        <TableCell>{company.pension_summary}</TableCell>
+                        <TableCell>
+                          <a
+                            href={company.director_info}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            View
+                          </a>
+                        </TableCell>
+                        <TableCell>{company.approval_stage}</TableCell>
+                      </TableRow>
+                    ))}
                   </TableBody>
                 </Table>
               </TableContainer>
 
               <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  mt: 2,
-                }}
+                sx={{ display: "flex", justifyContent: "space-between", mt: 2 }}
               >
                 <Box sx={{ display: "flex", alignItems: "center" }}>
                   <Typography variant="body2" color="text.secondary">
@@ -503,7 +413,7 @@ const HomePage = () => {
                     value={rowsPerPage}
                     onChange={handleChangeRowsPerPage}
                     size="small"
-                    sx={{ ml: 1, "& .MuiSelect-select": { py: 0.5 } }}
+                    sx={{ ml: 1 }}
                     variant="standard"
                   >
                     <MenuItem value={5}>5</MenuItem>
@@ -516,8 +426,8 @@ const HomePage = () => {
                   <Typography variant="body2" color="text.secondary">
                     {`${page * rowsPerPage + 1}-${Math.min(
                       (page + 1) * rowsPerPage,
-                      filteredUsers.length
-                    )} of ${filteredUsers.length}`}
+                      filteredCompanies.length
+                    )} of ${filteredCompanies.length}`}
                   </Typography>
                   <IconButton
                     onClick={() => setPage((prev) => Math.max(prev - 1, 0))}
@@ -531,12 +441,13 @@ const HomePage = () => {
                       setPage((prev) =>
                         Math.min(
                           prev + 1,
-                          Math.ceil(filteredUsers.length / rowsPerPage) - 1
+                          Math.ceil(filteredCompanies.length / rowsPerPage) - 1
                         )
                       )
                     }
                     disabled={
-                      page >= Math.ceil(filteredUsers.length / rowsPerPage) - 1
+                      page >=
+                      Math.ceil(filteredCompanies.length / rowsPerPage) - 1
                     }
                     size="small"
                   >

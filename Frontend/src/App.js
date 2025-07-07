@@ -13,6 +13,7 @@ import PrivateRoute from "./Auth/PrivateRoute";
 import PublicRoute from "./Auth/PublicRoute";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
+import KeyFinancialDataPage from "./pages/KeyFinancialDataPage";
 
 const theme = createTheme({
   palette: {
@@ -77,8 +78,15 @@ function App() {
               </PublicRoute>
             }
           />
+          <Route
+            path="/company/:id/financial-data"
+            element={
+              <PrivateRoute>
+                <KeyFinancialDataPage />
+              </PrivateRoute>
+            }
+          />
           <Route path="*" element={<Navigate to="/" replace />} />
-          
         </Routes>
       </Router>
     </ThemeProvider>
