@@ -1,8 +1,7 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import UploadIcon from "@mui/icons-material/CloudUpload";
-
 import {
   Box,
   Button,
@@ -21,19 +20,16 @@ import {
   TextField,
   Typography,
   Avatar,
-  Chip,
   Badge,
   Select,
   MenuItem,
   Menu,
+  Checkbox,
 } from "@mui/material";
 import {
   Search as SearchIcon,
   FilterList as FilterIcon,
   Notifications as NotificationsIcon,
-  Check as CheckIcon,
-  MoreVert as MoreVertIcon,
-  Language as LanguageIcon,
   Person as PersonIcon,
   ArrowBackIos as ArrowBackIosIcon,
   ArrowForwardIos as ArrowForwardIosIcon,
@@ -41,33 +37,18 @@ import {
 import axios from "axios";
 import { toast } from "react-toastify";
 
-const users = []; // Not used, kept if needed for future
-
 const HomePage = () => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [searchTerm, setSearchTerm] = useState("");
-  const [anchorEl, setAnchorEl] = useState(null);
-  const [selectedUser, setSelectedUser] = useState(null);
   const [profileAnchorEl, setProfileAnchorEl] = useState(null);
   const [companyData, setCompanyData] = useState([]);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploading, setUploading] = useState(false);
   const [uploadedFileName, setUploadedFileName] = useState("");
+  const statusOptions = ["Not Started", "Processing", "Done"];
 
-  const menuRef = useRef(null);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
-        setAnchorEl(null);
-        setSelectedUser(null);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
 
   const handleChangeRowsPerPage = (event) => {
     setRowsPerPage(parseInt(event.target.value, 10));
@@ -79,30 +60,6 @@ const HomePage = () => {
     setPage(0);
   };
 
-  const handleSignIn = () => {
-    navigate("/signin");
-  };
-
-  const handleMenuOpen = (event, user) => {
-    setAnchorEl(event.currentTarget);
-    setSelectedUser(user);
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-    setSelectedUser(null);
-  };
-
-  const handleEdit = (user) => {
-    console.log("Edit user:", user);
-    handleMenuClose();
-  };
-
-  const handleDelete = (user) => {
-    console.log("Delete user:", user);
-    handleMenuClose();
-  };
-
   const handleProfileMenuOpen = (event) => {
     setProfileAnchorEl(event.currentTarget);
   };
@@ -112,10 +69,43 @@ const HomePage = () => {
   };
 
   const handleLogout = () => {
-    console.log("Logged out");
     localStorage.clear();
     handleProfileMenuClose();
     navigate("/signin");
+  };
+
+  const handleExport = async () => {
+    const selectedIds = companyData.filter((c) => c.selected).map((c) => c.id);
+    if (selectedIds.length === 0) return;
+
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.post(
+        `${process.env.REACT_APP_API_URL}/export-company-data`,
+        selectedIds,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          responseType: "blob",
+        }
+      );
+
+      const blob = new Blob([response.data], { type: "text/csv" });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "exported_companies.csv";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      toast.success("Exported successfully");
+    } catch (error) {
+      toast.error("Export failed");
+      console.error("Export error:", error);
+    }
   };
 
   const filteredCompanies = companyData.filter((company) =>
@@ -125,28 +115,6 @@ const HomePage = () => {
   const paginatedCompanies = filteredCompanies.slice(
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
-  );
-
-  const ActionMenu = ({ anchorEl, onClose, onEdit, onDelete }) => (
-    <Menu
-      anchorEl={anchorEl}
-      open={Boolean(anchorEl)}
-      onClose={onClose}
-      anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-      transformOrigin={{ vertical: "top", horizontal: "right" }}
-      PaperProps={{
-        style: {
-          width: 120,
-          boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.1)",
-          borderRadius: 8,
-        },
-      }}
-    >
-      <MenuItem onClick={onEdit}>Edit</MenuItem>
-      <MenuItem onClick={onDelete} sx={{ color: "error.main" }}>
-        Delete
-      </MenuItem>
-    </Menu>
   );
 
   useEffect(() => {
@@ -161,7 +129,14 @@ const HomePage = () => {
             },
           }
         );
-        setCompanyData(response.data);
+        const staticStatusOptions = ["Not Started", "Processing", "Done"];
+        setCompanyData(
+          response.data.map((company, index) => ({
+            ...company,
+            selected: false,
+            status: staticStatusOptions[index % staticStatusOptions.length], // cycle through status values
+          }))
+        );
       } catch (error) {
         console.error("Error fetching company data:", error);
       }
@@ -205,6 +180,16 @@ const HomePage = () => {
       toast.error("File upload failed");
       console.error("Upload error:", error);
     }
+  };
+
+  // const toggleSelectAll = (checked) => {
+  //   setCompanyData((prev) => prev.map((c) => ({ ...c, selected: checked })));
+  // };
+
+  const toggleSelectOne = (id) => {
+    setCompanyData((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, selected: !c.selected } : c))
+    );
   };
 
   return (
@@ -260,7 +245,6 @@ const HomePage = () => {
                   textAlign: "center",
                   backgroundColor: "#f5f5f5",
                   mb: 4,
-                  position: "relative",
                 }}
               >
                 <input
@@ -271,7 +255,7 @@ const HomePage = () => {
                   onChange={(e) => {
                     const selectedFile = e.target.files[0];
                     if (selectedFile) {
-                      setUploadedFileName(selectedFile.name); // Show name before upload
+                      setUploadedFileName(selectedFile.name);
                       handleCSVUpload(selectedFile);
                     }
                   }}
@@ -296,8 +280,6 @@ const HomePage = () => {
                     </Typography>
                   )}
                 </label>
-
-                {/* Progress Bar */}
                 {uploading && (
                   <Box sx={{ mt: 2 }}>
                     <Typography variant="body2">
@@ -326,7 +308,12 @@ const HomePage = () => {
               </Box>
 
               <Box
-                sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  mb: 2,
+                  alignItems: "center",
+                }}
               >
                 <TextField
                   placeholder="Search company..."
@@ -342,15 +329,26 @@ const HomePage = () => {
                   }}
                   sx={{ width: 300 }}
                 />
-                <IconButton>
-                  <FilterIcon />
-                </IconButton>
+
+                <Box sx={{ display: "flex", gap: 2 }}>
+                  <Button
+                    variant="contained"
+                    onClick={handleExport}
+                    disabled={companyData.every((c) => !c.selected)}
+                  >
+                    Export Data
+                  </Button>
+                  <IconButton>
+                    <FilterIcon />
+                  </IconButton>
+                </Box>
               </Box>
 
               <TableContainer component={Paper} elevation={0}>
                 <Table>
                   <TableHead>
                     <TableRow>
+                      <TableCell></TableCell>
                       <TableCell>Company Name</TableCell>
                       <TableCell>Rating</TableCell>
                       <TableCell>Key Financial Data</TableCell>
@@ -358,11 +356,22 @@ const HomePage = () => {
                       <TableCell>Pension Summary</TableCell>
                       <TableCell>Director Info</TableCell>
                       <TableCell>Approval Stage</TableCell>
+                      <TableCell>Status</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
                     {paginatedCompanies.map((company) => (
                       <TableRow key={company.id}>
+                        <TableCell padding="checkbox">
+                          {company.company_name &&
+                            company.status === "Done" && (
+                              <Checkbox
+                                checked={company.selected}
+                                onChange={() => toggleSelectOne(company.id)}
+                              />
+                            )}
+                        </TableCell>
+
                         <TableCell>{company.company_name}</TableCell>
                         <TableCell>{company.rating}</TableCell>
                         <TableCell>
@@ -396,6 +405,47 @@ const HomePage = () => {
                           </a>
                         </TableCell>
                         <TableCell>{company.approval_stage}</TableCell>
+                        <TableCell>
+                          <Box
+                            sx={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              px: 2,
+                              py: 0.4,
+                              borderRadius: "12px",
+                              fontSize: "0.75rem",
+                              fontWeight: 500,
+                              letterSpacing: "0.5px",
+                              textTransform: "capitalize",
+                              color:
+                                company.status === "Done"
+                                  ? "#1565c0" 
+                                  : company.status === "Processing"
+                                  ? "#2e7d32" 
+                                  : "#c62828", 
+                              backgroundColor:
+                                company.status === "Done"
+                                  ? "rgba(21, 101, 192, 0.1)" 
+                                  : company.status === "Processing"
+                                  ? "rgba(46, 125, 50, 0.1)" 
+                                  : "rgba(198, 40, 40, 0.1)", 
+                              border: "1px solid",
+                              borderColor:
+                                company.status === "Done"
+                                  ? "rgba(21, 101, 192, 0.3)"
+                                  : company.status === "Processing"
+                                  ? "rgba(46, 125, 50, 0.3)"
+                                  : "rgba(198, 40, 40, 0.3)",
+                              boxShadow: "0 0 0 1px rgba(0,0,0,0.02)",
+                              backdropFilter: "blur(2px)",
+                              minWidth: "80px",
+                              textAlign: "center",
+                            }}
+                          >
+                            {company.status}
+                          </Box>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -458,19 +508,8 @@ const HomePage = () => {
             </CardContent>
           </Card>
         </Container>
-
-        {/* Action Menu */}
-        <div ref={menuRef}>
-          <ActionMenu
-            anchorEl={anchorEl}
-            onClose={handleMenuClose}
-            onEdit={() => handleEdit(selectedUser)}
-            onDelete={() => handleDelete(selectedUser)}
-          />
-        </div>
       </Box>
 
-      {/* Profile Dropdown */}
       <Menu
         anchorEl={profileAnchorEl}
         open={Boolean(profileAnchorEl)}

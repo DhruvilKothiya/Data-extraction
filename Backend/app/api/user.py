@@ -2,7 +2,7 @@ import os
 import csv
 from io import StringIO
 from decouple import config 
-from fastapi import APIRouter, Depends, HTTPException,Request,File, UploadFile
+from fastapi import APIRouter, Depends, HTTPException,Request,File, UploadFile,Response
 from sqlalchemy.orm import Session
 from app.db.session import SessionLocal
 from app.utils.jwt import create_access_token, decode_token
@@ -169,3 +169,64 @@ def get_key_financial_data(company_id: int, db: Session = Depends(get_db)):
 
     return key_data
 
+@router.post("/export-company-data")
+def export_selected_key_financial_data(ids: list[int], db: Session = Depends(get_db)):
+    # Step 1: Get selected companies
+    companies = db.query(CompanyData).filter(CompanyData.id.in_(ids)).all()
+
+    if not companies:
+        raise HTTPException(status_code=404, detail="No selected companies found.")
+
+    # Step 2: Extract related key_financial_data_id values
+    key_data_ids = [c.key_financial_data_id for c in companies if c.key_financial_data_id]
+
+    # Step 3: Fetch matching key financial data rows
+    key_data_list = db.query(KeyFinancialData).filter(KeyFinancialData.id.in_(key_data_ids)).all()
+
+    if not key_data_list:
+        raise HTTPException(status_code=404, detail="No key financial data found.")
+
+    # Step 4: Prepare CSV content
+    output = StringIO()
+    writer = csv.writer(output)
+
+    # CSV header (you can remove columns if not needed)
+    writer.writerow([
+        "Company Name", "Company Status", "Company Registered Number", "Incorporation Date", "Latest Accounts Date",
+        "Turnover Latest Year", "Turnover Previous Year", "Turnover 2020", "Turnover 2019",
+        "Profit Latest Year", "Profit Previous Year", "Profit 2020", "Profit 2019",
+        "Parent Company", "Nationality of Parent", "Auditor Name Latest", "Auditor Firm Latest",
+        "No. of UK DB Arrangements",
+        "DB Arrangement 1 - Name", "Actuary", "Actuary Firm", "Status",
+        "DB Arrangement 2 - Name", "Actuary", "Actuary Firm", "Status",
+        "DB Arrangement 3 - Name", "Actuary", "Actuary Firm", "Status",
+        "Fair Value Assets Year End", "Fair Value Prev Year End", "Fair Value 2020", "Fair Value 2019",
+        "Surplus Year End", "Surplus Prev Year End", "Surplus 2020", "Surplus 2019",
+        "Employer Contribution Latest Year", "Employer Contribution Previous Year", "Benefits Paid",
+        "Expenses Paid Latest Year", "Expenses Paid Previous Year", "Defined Contribution Paid",
+        "Assets: Equities", "Bonds", "Real Estate", "LDI", "Cash", "Other"
+    ])
+
+    for d in key_data_list:
+        writer.writerow([
+            d.company_name, d.company_status, d.company_registered_number, d.incorporation_date, d.latest_accounts_date,
+            d.turnover_latest_year, d.turnover_previous_year, d.turnover_2020, d.turnover_2019,
+            d.profit_latest_year, d.profit_previous_year, d.profit_2020, d.profit_2019,
+            d.parent_company, d.nationality_of_parent, d.auditor_name_latest, d.auditor_firm_latest,
+            d.number_of_uk_defined_benefit_arrangements,
+            d.Name_of_Defined_Benefit_Arrangement_1, d.scheme_actuary_1, d.scheme_actuary_firm_1, d.Status_of_Defined_Benefit_Arrangement_1,
+            d.Name_of_Defined_Benefit_Arrangement_2, d.scheme_actuary_2, d.scheme_actuary_firm_2, d.Status_of_Defined_Benefit_Arrangement_2,
+            d.Name_of_Defined_Benefit_Arrangement_3, d.scheme_actuary_3, d.scheme_actuary_firm_3, d.Status_of_Defined_Benefit_Arrangement_3,
+            d.fair_value_assets_year_end, d.fair_value_assets_prev_year_end, d.fair_value_assets_2020, d.fair_value_assets_2019,
+            d.surplus_year_end, d.surplus_prev_year_end, d.surplus_2020, d.surplus_2019,
+            d.employer_contrib_latest_year, d.employer_contrib_previous_year, d.benefits_paid,
+            d.expenses_paid_latest_year, d.expenses_paid_previous_year, d.defined_contrib_paid,
+            d.assets_equities, d.assets_bonds, d.assets_real_estate, d.assets_ldi, d.assets_cash, d.assets_other
+        ])
+
+    output.seek(0)
+    return Response(
+        content=output.getvalue(),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=key_financial_data.csv"}
+    )
