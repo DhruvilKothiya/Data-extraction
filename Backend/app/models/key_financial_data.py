@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Date, Numeric
+from sqlalchemy import Column, Integer, String, Date, Numeric,JSON
 from app.db.base import Base
 
 class KeyFinancialData(Base):
@@ -10,16 +10,11 @@ class KeyFinancialData(Base):
     company_registered_number = Column(Integer, nullable=True, unique=True)
     incorporation_date = Column(Date, nullable=True)
     latest_accounts_date = Column(Date, nullable=True)
-
-    turnover_latest_year = Column(Numeric(20, 4), nullable=True)
-    turnover_previous_year = Column(Numeric(20, 4), nullable=True)
-    turnover_2020 = Column(Numeric(20, 4), nullable=True)
-    turnover_2019 = Column(Numeric(20, 4), nullable=True)
-
-    profit_latest_year = Column(Numeric(20, 4), nullable=True)
-    profit_previous_year = Column(Numeric(20, 4), nullable=True)
-    profit_2020 = Column(Numeric(20, 4), nullable=True)
-    profit_2019 = Column(Numeric(20, 4), nullable=True)
+    
+    turnover_data = Column(JSON, nullable=True)
+    profit_data = Column(JSON, nullable=True)
+    fair_value_assets = Column(JSON, nullable=True)
+    surplus_data = Column(JSON, nullable=True)
 
     parent_company = Column(String(255), nullable=True)
     nationality_of_parent = Column(String(100), nullable=True)
@@ -43,15 +38,6 @@ class KeyFinancialData(Base):
     scheme_actuary_firm_3 = Column(String(255), nullable=True)
     Status_of_Defined_Benefit_Arrangement_3 = Column(String(100), nullable=True)
 
-    fair_value_assets_year_end = Column(Numeric(20, 2), nullable=True)
-    fair_value_assets_prev_year_end = Column(Numeric(20, 2), nullable=True)
-    fair_value_assets_2020 = Column(Numeric(20, 2), nullable=True)
-    fair_value_assets_2019 = Column(Numeric(20, 2), nullable=True)
-
-    surplus_year_end = Column(Numeric(20, 2), nullable=True)
-    surplus_prev_year_end = Column(Numeric(20, 2), nullable=True)
-    surplus_2020 = Column(Numeric(20, 2), nullable=True)
-    surplus_2019 = Column(Numeric(20, 2), nullable=True)
 
     employer_contrib_latest_year = Column(Numeric(20, 2), nullable=True)
     employer_contrib_previous_year = Column(Numeric(20, 2), nullable=True)

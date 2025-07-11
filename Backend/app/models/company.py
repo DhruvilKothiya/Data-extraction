@@ -16,3 +16,4 @@ class CompanyData(Base):
     pension_summary = Column(Text)
     director_info = Column(Text)
     approval_stage = Column(Integer, default=0)
+    status = Column(String(20), default="Not Started")

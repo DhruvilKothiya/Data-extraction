@@ -1,5 +1,5 @@
 import os
-import csv
+import csv,requests
 from io import StringIO
 from decouple import config 
 from fastapi import APIRouter, Depends, HTTPException,Request,File, UploadFile,Response
@@ -13,7 +13,10 @@ from app.models.csv_file_data import CSVFileData
 from app.utils.email import send_reset_email
 from passlib.context import CryptContext
 from app.models.company import CompanyData 
+from app.utils.functions import map_api_data_to_model
 from app.models.key_financial_data import KeyFinancialData
+
+
 import shutil
 
 router = APIRouter()
@@ -102,9 +105,8 @@ def get_company_data(db: Session = Depends(get_db)):
             "approval_stage": c.approval_stage
         }
         for c in companies  
-    ]
-    
-    
+    ]  
+
 @router.post("/upload-file")
 def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
     try:
@@ -113,13 +115,14 @@ def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
 
         contents = file.file.read().decode("utf-8")
         csv_reader = csv.DictReader(StringIO(contents))
-
         required_fields = ["Company", "Address1", "Address2", "Address3", "City", "County"]
 
         for row in csv_reader:
             company_name = row.get("Company")
+            if not company_name:
+                continue
 
-            # Insert into csv_file_data table
+            # Step 1: Save in csv_file_data
             csv_record = CSVFileData(
                 company_name=company_name,
                 address1=row.get("Address1"),
@@ -130,31 +133,47 @@ def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
             )
             db.add(csv_record)
 
-            # Check if company already exists in company_data
-            if company_name:
-                exists_in_company_data = db.query(CompanyData).filter(CompanyData.company_name == company_name).first()
-                exists_in_key_financial = db.query(KeyFinancialData).filter(KeyFinancialData.company_name == company_name).first()
+            # Step 2: Create/Update KeyFinancialData
+            key_data = db.query(KeyFinancialData).filter(KeyFinancialData.company_name == company_name).first()
+            if not key_data:
+                key_data = KeyFinancialData(company_name=company_name)
+                db.add(key_data)
+                db.flush()  # to get the id
 
-                if not exists_in_key_financial:
-                    key_financial_data = KeyFinancialData(company_name=company_name)
-                    db.add(key_financial_data)
-                    db.flush() 
+            # Step 3: Create CompanyData if not exists
+            if not db.query(CompanyData).filter(CompanyData.company_name == company_name).first():
+                company_data = CompanyData(
+                    company_name=company_name,
+                    key_financial_data_id=key_data.id
+
+                )
+                db.add(company_data)
+
+            # Step 4: Fetch Key Financial data from external API
+            try:
+                api_response = requests.post(
+                    "http://192.168.29.160:8000/extract-financial-data",
+                    json={"company_name": company_name}
+                )
+                print(api_response.status_code)
+                print(api_response.json())
+                if api_response.status_code == 200:
+                    json_data = api_response.json()
+                    map_api_data_to_model(json_data, db, key_data) 
+                    
+                    
                 else:
-                    key_financial_data = exists_in_key_financial
-
-                if not exists_in_company_data:
-                    company_data = CompanyData(
-                        company_name=company_name,
-                        key_financial_data_id=key_financial_data.id 
-                    )
-                    db.add(company_data)
+                    print(f"API failed for {company_name}: {api_response.status_code}")
+            except Exception as e:
+                print(f"Error fetching API data for {company_name}: {e}")
 
         db.commit()
-        return {"message": "File processed and data saved successfully"}
+        return {"message": "File processed, data saved, and key financial data fetched."}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to process file: {str(e)}")
-
+    
+    
 @router.get("/key-financial-data/{company_id}")
 def get_key_financial_data(company_id: int, db: Session = Depends(get_db)):
     company = db.query(CompanyData).filter(CompanyData.id == company_id).first()
