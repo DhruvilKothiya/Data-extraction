@@ -15,6 +15,8 @@ from passlib.context import CryptContext
 from app.models.company import CompanyData 
 from app.utils.functions import map_api_data_to_model
 from app.models.key_financial_data import KeyFinancialData
+from typing import List
+
 
 
 import shutil
@@ -141,13 +143,17 @@ def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
                 db.flush()  # to get the id
 
             # Step 3: Create CompanyData if not exists
-            if not db.query(CompanyData).filter(CompanyData.company_name == company_name).first():
+            company_data = db.query(CompanyData).filter(CompanyData.company_name == company_name).first()
+            if not company_data:
                 company_data = CompanyData(
                     company_name=company_name,
-                    key_financial_data_id=key_data.id
-
+                    key_financial_data_id=key_data.id,
+                    status="Processing"  # set to Processing at first
                 )
                 db.add(company_data)
+            else:
+                company_data.status = "Processing"  # update if already exists
+
 
             # Step 4: Fetch Key Financial data from external API
             try:
@@ -159,14 +165,15 @@ def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
                 print(api_response.json())
                 if api_response.status_code == 200:
                     json_data = api_response.json()
-                    map_api_data_to_model(json_data, db, key_data) 
-                    
+                    map_api_data_to_model(json_data, db, key_data)
+                    company_data.status = "Done"
                     
                 else:
                     print(f"API failed for {company_name}: {api_response.status_code}")
             except Exception as e:
                 print(f"Error fetching API data for {company_name}: {e}")
-
+                if company_data:
+                    company_data.status = "Not Started"
         db.commit()
         return {"message": "File processed, data saved, and key financial data fetched."}
 
@@ -188,59 +195,108 @@ def get_key_financial_data(company_id: int, db: Session = Depends(get_db)):
 
     return key_data
 
-@router.post("/export-company-data")
-def export_selected_key_financial_data(ids: list[int], db: Session = Depends(get_db)):
-    # Step 1: Get selected companies
-    companies = db.query(CompanyData).filter(CompanyData.id.in_(ids)).all()
 
+
+
+def extract_year_values(json_data, fixed_years):
+    """
+    Extracts values for fixed years (like 2020, 2019) and determines the latest
+    and previous year dynamically based on the highest ENDING year in keys like "2023-24".
+    """
+    result = {year: None for year in fixed_years + ['latest', 'previous']}
+
+    if not json_data or not isinstance(json_data, dict):
+        return result
+
+    year_map = {}
+    for key in json_data:
+        try:
+            # If key is like "2023-24", extract the second part as int: 24 → 2024
+            if "-" in key:
+                end_part = key.split("-")[1]
+                end_year = int("20" + end_part) if len(end_part) == 2 else int(end_part)
+            else:
+                end_year = int(key)
+            year_map[end_year] = key  # Map end year → original key
+        except ValueError:
+            continue  # skip invalid keys
+
+    sorted_years = sorted(year_map.keys())
+    if not sorted_years:
+        return result
+
+    latest_year = sorted_years[-1]
+    prev_year = sorted_years[-2] if len(sorted_years) >= 2 else None
+
+    result['latest'] = json_data.get(year_map[latest_year])
+    result['previous'] = json_data.get(year_map[prev_year]) if prev_year else None
+    result['2020'] = json_data.get('2020')
+    result['2019'] = json_data.get('2019')
+
+    return result
+
+
+@router.post("/export-company-data")
+def export_selected_key_financial_data(ids: List[int], db: Session = Depends(get_db)):
+    companies = db.query(CompanyData).filter(CompanyData.id.in_(ids)).all()
     if not companies:
         raise HTTPException(status_code=404, detail="No selected companies found.")
 
-    # Step 2: Extract related key_financial_data_id values
     key_data_ids = [c.key_financial_data_id for c in companies if c.key_financial_data_id]
-
-    # Step 3: Fetch matching key financial data rows
     key_data_list = db.query(KeyFinancialData).filter(KeyFinancialData.id.in_(key_data_ids)).all()
-
     if not key_data_list:
         raise HTTPException(status_code=404, detail="No key financial data found.")
 
-    # Step 4: Prepare CSV content
     output = StringIO()
     writer = csv.writer(output)
 
-    # CSV header (you can remove columns if not needed)
+    # CSV header
     writer.writerow([
-        "Company Name", "Company Status", "Company Registered Number", "Incorporation Date", "Latest Accounts Date",
-        "Turnover Latest Year", "Turnover Previous Year", "Turnover 2020", "Turnover 2019",
-        "Profit Latest Year", "Profit Previous Year", "Profit 2020", "Profit 2019",
-        "Parent Company", "Nationality of Parent", "Auditor Name Latest", "Auditor Firm Latest",
-        "No. of UK DB Arrangements",
-        "DB Arrangement 1 - Name", "Actuary", "Actuary Firm", "Status",
-        "DB Arrangement 2 - Name", "Actuary", "Actuary Firm", "Status",
-        "DB Arrangement 3 - Name", "Actuary", "Actuary Firm", "Status",
-        "Fair Value Assets Year End", "Fair Value Prev Year End", "Fair Value 2020", "Fair Value 2019",
-        "Surplus Year End", "Surplus Prev Year End", "Surplus 2020", "Surplus 2019",
-        "Employer Contribution Latest Year", "Employer Contribution Previous Year", "Benefits Paid",
-        "Expenses Paid Latest Year", "Expenses Paid Previous Year", "Defined Contribution Paid",
-        "Assets: Equities", "Bonds", "Real Estate", "LDI", "Cash", "Other"
+        "Company Name", "Company Status", "Company Registered Number", "Incorporation Date", "Date of Latest Accounts",
+        "Turnover Latest Year", "Turnover Previous Financial Year", "Turnover 2020", "Turnover 2019",
+        "Profit Latest Year", "Profit Previous Financial Year", "Profit 2020", "Profit 2019",
+        "Parent Company", "Nationality of Parent", "Name of the Auditor (Latest accounts)", "Auditor firm (Latest Accounts)",
+        "Number of UK Defined Benefit Arrangements",
+        "Name of Defined Benefit Arrangement 1", "Scheme Actuary", "Scheme Acuary firm", "Status of Defined Benefit Arrangement 1",
+        "Name of Defined Benefit Arrangement 2", "Scheme Actuary", "Scheme Acuary firm", "Status of Defined Benefit Arrangement 2",
+        "Name of Defined Benefit Arrangement 3", "Scheme Actuary", "Scheme Acuary firm", "Status of Defined Benefit Arrangement 3",
+        "Fair value of assets at year end for Defined Benefit Arrangements",
+        "Fair value of assets at previous year end for Defined Benefit Arrangements",
+        "Fair value of assets at year end for Defined Benefit Arrangements, 2020 figure",
+        "Fair value of assets at previous year end for Defined Benefit Arrangements, 2019 figure",
+        "Surplus at year end for Defined Benefit Arrangements",
+        "Surplus at previous year end for Defined Benefit Arrangements",
+        "Surplus at year end for Defined Benefit Arrangements, 2020 figure",
+        "Surplus at previous year end for Defined Benefit Arrangements, 2019 figure",
+        "Employer contributions paid for Defined Benefit Arrangements Latest Year",
+        "Employer contributions paid for Defined Benefit Arrangements previous year",
+        "Benefits Paid Defined Benefit Arrangements",
+        "Expenses paid Latest Year", "Expenses paid previous year", "Defined contribution contributions paid",
+        "assets held in equities", "assets held in bonds", "assets held in real  estate",
+        "assets held in liability driven investments (LDI)", "assets held in cash", "assets held in other"
     ])
 
     for d in key_data_list:
+        turnover = extract_year_values(d.turnover_data, ['2020', '2019'])
+        profit = extract_year_values(d.profit_data, ['2020', '2019'])
+        fair_value = extract_year_values(d.fair_value_assets, ['2020', '2019'])
+        surplus = extract_year_values(d.surplus_data, ['2020', '2019'])
+
         writer.writerow([
             d.company_name, d.company_status, d.company_registered_number, d.incorporation_date, d.latest_accounts_date,
-            d.turnover_latest_year, d.turnover_previous_year, d.turnover_2020, d.turnover_2019,
-            d.profit_latest_year, d.profit_previous_year, d.profit_2020, d.profit_2019,
+            turnover['latest'], turnover['previous'], turnover['2020'], turnover['2019'],
+            profit['latest'], profit['previous'], profit['2020'], profit['2019'],
             d.parent_company, d.nationality_of_parent, d.auditor_name_latest, d.auditor_firm_latest,
             d.number_of_uk_defined_benefit_arrangements,
             d.Name_of_Defined_Benefit_Arrangement_1, d.scheme_actuary_1, d.scheme_actuary_firm_1, d.Status_of_Defined_Benefit_Arrangement_1,
             d.Name_of_Defined_Benefit_Arrangement_2, d.scheme_actuary_2, d.scheme_actuary_firm_2, d.Status_of_Defined_Benefit_Arrangement_2,
             d.Name_of_Defined_Benefit_Arrangement_3, d.scheme_actuary_3, d.scheme_actuary_firm_3, d.Status_of_Defined_Benefit_Arrangement_3,
-            d.fair_value_assets_year_end, d.fair_value_assets_prev_year_end, d.fair_value_assets_2020, d.fair_value_assets_2019,
-            d.surplus_year_end, d.surplus_prev_year_end, d.surplus_2020, d.surplus_2019,
+            fair_value['latest'], fair_value['previous'], fair_value['2020'], fair_value['2019'],
+            surplus['latest'], surplus['previous'], surplus['2020'], surplus['2019'],
             d.employer_contrib_latest_year, d.employer_contrib_previous_year, d.benefits_paid,
             d.expenses_paid_latest_year, d.expenses_paid_previous_year, d.defined_contrib_paid,
-            d.assets_equities, d.assets_bonds, d.assets_real_estate, d.assets_ldi, d.assets_cash, d.assets_other
+            d.assets_equities, d.assets_bonds, d.assets_real_estate,
+            d.assets_ldi, d.assets_cash, d.assets_other
         ])
 
     output.seek(0)
