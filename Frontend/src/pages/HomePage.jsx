@@ -186,6 +186,16 @@ const HomePage = () => {
   //   setCompanyData((prev) => prev.map((c) => ({ ...c, selected: checked })));
   // };
 
+  const toggleSelectAll = (checked) => {
+    setCompanyData((prevData) =>
+      prevData.map((company) =>
+        paginatedCompanies.some((c) => c.id === company.id)
+          ? { ...company, selected: checked }
+          : company
+      )
+    );
+  };
+
   const toggleSelectOne = (id) => {
     setCompanyData((prev) =>
       prev.map((c) => (c.id === id ? { ...c, selected: !c.selected } : c))
@@ -348,7 +358,20 @@ const HomePage = () => {
                 <Table>
                   <TableHead>
                     <TableRow>
-                      <TableCell></TableCell>
+                      <TableCell padding="checkbox">
+                        <Checkbox
+                          checked={
+                            paginatedCompanies.length > 0 &&
+                            paginatedCompanies.every((c) => c.selected)
+                          }
+                          indeterminate={
+                            paginatedCompanies.some((c) => c.selected) &&
+                            !paginatedCompanies.every((c) => c.selected)
+                          }
+                          onChange={(e) => toggleSelectAll(e.target.checked)}
+                        />
+                      </TableCell>
+
                       <TableCell>Company Name</TableCell>
                       <TableCell>Rating</TableCell>
                       <TableCell>Key Financial Data</TableCell>
@@ -363,13 +386,10 @@ const HomePage = () => {
                     {paginatedCompanies.map((company) => (
                       <TableRow key={company.id}>
                         <TableCell padding="checkbox">
-                          {company.company_name &&
-                            company.status === "Done" && (
-                              <Checkbox
-                                checked={company.selected}
-                                onChange={() => toggleSelectOne(company.id)}
-                              />
-                            )}
+                          <Checkbox
+                            checked={company.selected}
+                            onChange={() => toggleSelectOne(company.id)}
+                          />
                         </TableCell>
 
                         <TableCell>{company.company_name}</TableCell>
@@ -420,16 +440,16 @@ const HomePage = () => {
                               textTransform: "capitalize",
                               color:
                                 company.status === "Done"
-                                  ? "#1565c0" 
+                                  ? "#1565c0"
                                   : company.status === "Processing"
-                                  ? "#2e7d32" 
-                                  : "#c62828", 
+                                  ? "#2e7d32"
+                                  : "#c62828",
                               backgroundColor:
                                 company.status === "Done"
-                                  ? "rgba(21, 101, 192, 0.1)" 
+                                  ? "rgba(21, 101, 192, 0.1)"
                                   : company.status === "Processing"
-                                  ? "rgba(46, 125, 50, 0.1)" 
-                                  : "rgba(198, 40, 40, 0.1)", 
+                                  ? "rgba(46, 125, 50, 0.1)"
+                                  : "rgba(198, 40, 40, 0.1)",
                               border: "1px solid",
                               borderColor:
                                 company.status === "Done"
