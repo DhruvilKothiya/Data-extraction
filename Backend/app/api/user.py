@@ -1,6 +1,10 @@
 import os
 import csv,requests
 from io import StringIO
+from fastapi import Body
+from fastapi.responses import StreamingResponse
+import pandas as pd
+from io import BytesIO
 from decouple import config 
 from fastapi import APIRouter, Depends, HTTPException,Request,File, UploadFile,Response
 from sqlalchemy.orm import Session
@@ -13,7 +17,6 @@ from app.models.csv_file_data import CSVFileData
 from app.utils.email import send_reset_email
 from passlib.context import CryptContext
 from app.models.company import CompanyData 
-from app.utils.functions import map_api_data_to_model
 from app.models.key_financial_data import KeyFinancialData
 from typing import List
 
@@ -140,22 +143,21 @@ def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
             if not key_data:
                 key_data = KeyFinancialData(company_name=company_name)
                 db.add(key_data)
-                db.flush()  # to get the id
+                db.flush()  # Get the ID immediately
 
-            # Step 3: Create CompanyData if not exists
+            # Step 3: Create/Update CompanyData
             company_data = db.query(CompanyData).filter(CompanyData.company_name == company_name).first()
             if not company_data:
                 company_data = CompanyData(
                     company_name=company_name,
                     key_financial_data_id=key_data.id,
-                    status="Processing"  # set to Processing at first
+                    status="Processing"
                 )
                 db.add(company_data)
             else:
-                company_data.status = "Processing"  # update if already exists
+                company_data.status = "Processing"
 
-
-            # Step 4: Fetch Key Financial data from external API
+            # Step 4: Call API (but skip mapping)
             try:
                 api_response = requests.post(
                     "http://192.168.29.160:8000/extract-financial-data",
@@ -163,24 +165,23 @@ def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
                 )
                 print(api_response.status_code)
                 print(api_response.json())
+
                 if api_response.status_code == 200:
-                    json_data = api_response.json()
-                    map_api_data_to_model(json_data, db, key_data)
+                    # Skipping: map_api_data_to_model(json_data, db, key_data)
                     company_data.status = "Done"
-                    
                 else:
                     print(f"API failed for {company_name}: {api_response.status_code}")
             except Exception as e:
                 print(f"Error fetching API data for {company_name}: {e}")
                 if company_data:
                     company_data.status = "Not Started"
+
         db.commit()
-        return {"message": "File processed, data saved, and key financial data fetched."}
+        return {"message": "File processed, companies updated, API hit, but mapping skipped."}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to process file: {str(e)}")
-    
-    
+
 @router.get("/key-financial-data/{company_id}")
 def get_key_financial_data(company_id: int, db: Session = Depends(get_db)):
     company = db.query(CompanyData).filter(CompanyData.id == company_id).first()
@@ -237,71 +238,115 @@ def extract_year_values(json_data, fixed_years):
 
 
 @router.post("/export-company-data")
-def export_selected_key_financial_data(ids: List[int], db: Session = Depends(get_db)):
+def export_selected_key_financial_data(
+    data: dict = Body(...),
+    db: Session = Depends(get_db)
+):
+    ids = data.get("ids", [])
+    include_key = data.get("key_financial", False)
+    include_people = data.get("people_data", False)
+    include_summary = data.get("summary_notes", False)
+
     companies = db.query(CompanyData).filter(CompanyData.id.in_(ids)).all()
     if not companies:
         raise HTTPException(status_code=404, detail="No selected companies found.")
 
-    key_data_ids = [c.key_financial_data_id for c in companies if c.key_financial_data_id]
-    key_data_list = db.query(KeyFinancialData).filter(KeyFinancialData.id.in_(key_data_ids)).all()
-    if not key_data_list:
-        raise HTTPException(status_code=404, detail="No key financial data found.")
+    key_data_map = {
+        c.key_financial_data_id: c
+        for c in companies if c.key_financial_data_id
+    }
+    key_data_list = db.query(KeyFinancialData).filter(KeyFinancialData.id.in_(key_data_map.keys())).all()
+    key_data_by_id = {k.id: k for k in key_data_list}
 
-    output = StringIO()
-    writer = csv.writer(output)
+    # Prepare main data
+    main_rows = []
+    for company in companies:
+        row = {
+            "Company Name": company.company_name,
+            "Approval Status": company.approval_stage,
+            "Status Code": company.status,
+            "Type of Scheme": "Defined Benefit"
+        }
 
-    # CSV header
-    writer.writerow([
-        "Company Name", "Company Status", "Company Registered Number", "Incorporation Date", "Date of Latest Accounts",
-        "Turnover Latest Year", "Turnover Previous Financial Year", "Turnover 2020", "Turnover 2019",
-        "Profit Latest Year", "Profit Previous Financial Year", "Profit 2020", "Profit 2019",
-        "Parent Company", "Nationality of Parent", "Name of the Auditor (Latest accounts)", "Auditor firm (Latest Accounts)",
-        "Number of UK Defined Benefit Arrangements",
-        "Name of Defined Benefit Arrangement 1", "Scheme Actuary", "Scheme Acuary firm", "Status of Defined Benefit Arrangement 1",
-        "Name of Defined Benefit Arrangement 2", "Scheme Actuary", "Scheme Acuary firm", "Status of Defined Benefit Arrangement 2",
-        "Name of Defined Benefit Arrangement 3", "Scheme Actuary", "Scheme Acuary firm", "Status of Defined Benefit Arrangement 3",
-        "Fair value of assets at year end for Defined Benefit Arrangements",
-        "Fair value of assets at previous year end for Defined Benefit Arrangements",
-        "Fair value of assets at year end for Defined Benefit Arrangements, 2020 figure",
-        "Fair value of assets at previous year end for Defined Benefit Arrangements, 2019 figure",
-        "Surplus at year end for Defined Benefit Arrangements",
-        "Surplus at previous year end for Defined Benefit Arrangements",
-        "Surplus at year end for Defined Benefit Arrangements, 2020 figure",
-        "Surplus at previous year end for Defined Benefit Arrangements, 2019 figure",
-        "Employer contributions paid for Defined Benefit Arrangements Latest Year",
-        "Employer contributions paid for Defined Benefit Arrangements previous year",
-        "Benefits Paid Defined Benefit Arrangements",
-        "Expenses paid Latest Year", "Expenses paid previous year", "Defined contribution contributions paid",
-        "assets held in equities", "assets held in bonds", "assets held in real  estate",
-        "assets held in liability driven investments (LDI)", "assets held in cash", "assets held in other"
-    ])
+        if include_key:
+            d = key_data_by_id.get(company.key_financial_data_id)
+            turnover = extract_year_values(d.turnover_data, ['2020', '2019']) if d else {}
+            profit = extract_year_values(d.profit_data, ['2020', '2019']) if d else {}
+            fair_value = extract_year_values(d.fair_value_assets, ['2020', '2019']) if d else {}
+            surplus = extract_year_values(d.surplus_data, ['2020', '2019']) if d else {}
 
-    for d in key_data_list:
-        turnover = extract_year_values(d.turnover_data, ['2020', '2019'])
-        profit = extract_year_values(d.profit_data, ['2020', '2019'])
-        fair_value = extract_year_values(d.fair_value_assets, ['2020', '2019'])
-        surplus = extract_year_values(d.surplus_data, ['2020', '2019'])
+            if d:
+                row.update({
+                    "Company Status": d.company_status,
+                    "Company Registered Number": d.company_registered_number,
+                    "Incorporation Date": d.incorporation_date,
+                    "Date of Latest Accounts": d.latest_accounts_date,
+                    "Turnover Latest Year": turnover.get('latest'),
+                    "Turnover Previous Financial Year": turnover.get('previous'),
+                    "Turnover 2020": turnover.get('2020'),
+                    "Turnover 2019": turnover.get('2019'),
+                    "Profit Latest Year": profit.get('latest'),
+                    "Profit Previous Financial Year": profit.get('previous'),
+                    "Profit 2020": profit.get('2020'),
+                    "Profit 2019": profit.get('2019'),
+                    "Parent Company": d.parent_company,
+                    "Nationality of Parent": d.nationality_of_parent,
+                    "Auditor Name": d.auditor_name_latest,
+                    "Auditor Firm": d.auditor_firm_latest,
+                    "Number of UK DB Arrangements": d.number_of_uk_defined_benefit_arrangements,
+                    "Name DB Arrangement 1": d.Name_of_Defined_Benefit_Arrangement_1,
+                    "Scheme Actuary 1": d.scheme_actuary_1,
+                    "Firm 1": d.scheme_actuary_firm_1,
+                    "Status 1": d.Status_of_Defined_Benefit_Arrangement_1,
+                    "Name DB Arrangement 2": d.Name_of_Defined_Benefit_Arrangement_2,
+                    "Scheme Actuary 2": d.scheme_actuary_2,
+                    "Firm 2": d.scheme_actuary_firm_2,
+                    "Status 2": d.Status_of_Defined_Benefit_Arrangement_2,
+                    "Name DB Arrangement 3": d.Name_of_Defined_Benefit_Arrangement_3,
+                    "Scheme Actuary 3": d.scheme_actuary_3,
+                    "Firm 3": d.scheme_actuary_firm_3,
+                    "Status 3": d.Status_of_Defined_Benefit_Arrangement_3,
+                    "Fair Value Latest": fair_value.get('latest'),
+                    "Fair Value Previous": fair_value.get('previous'),
+                    "Fair Value 2020": fair_value.get('2020'),
+                    "Fair Value 2019": fair_value.get('2019'),
+                    "Surplus Latest": surplus.get('latest'),
+                    "Surplus Previous": surplus.get('previous'),
+                    "Surplus 2020": surplus.get('2020'),
+                    "Surplus 2019": surplus.get('2019'),
+                    "Employer Contributions Latest": d.employer_contrib_latest_year,
+                    "Employer Contributions Previous": d.employer_contrib_previous_year,
+                    "Benefits Paid": d.benefits_paid,
+                    "Expenses Latest": d.expenses_paid_latest_year,
+                    "Expenses Previous": d.expenses_paid_previous_year,
+                    "Defined Contribution Paid": d.defined_contrib_paid,
+                    "Equities": d.assets_equities,
+                    "Bonds": d.assets_bonds,
+                    "Real Estate": d.assets_real_estate,
+                    "LDI": d.assets_ldi,
+                    "Cash": d.assets_cash,
+                    "Other Assets": d.assets_other
+                })
 
-        writer.writerow([
-            d.company_name, d.company_status, d.company_registered_number, d.incorporation_date, d.latest_accounts_date,
-            turnover['latest'], turnover['previous'], turnover['2020'], turnover['2019'],
-            profit['latest'], profit['previous'], profit['2020'], profit['2019'],
-            d.parent_company, d.nationality_of_parent, d.auditor_name_latest, d.auditor_firm_latest,
-            d.number_of_uk_defined_benefit_arrangements,
-            d.Name_of_Defined_Benefit_Arrangement_1, d.scheme_actuary_1, d.scheme_actuary_firm_1, d.Status_of_Defined_Benefit_Arrangement_1,
-            d.Name_of_Defined_Benefit_Arrangement_2, d.scheme_actuary_2, d.scheme_actuary_firm_2, d.Status_of_Defined_Benefit_Arrangement_2,
-            d.Name_of_Defined_Benefit_Arrangement_3, d.scheme_actuary_3, d.scheme_actuary_firm_3, d.Status_of_Defined_Benefit_Arrangement_3,
-            fair_value['latest'], fair_value['previous'], fair_value['2020'], fair_value['2019'],
-            surplus['latest'], surplus['previous'], surplus['2020'], surplus['2019'],
-            d.employer_contrib_latest_year, d.employer_contrib_previous_year, d.benefits_paid,
-            d.expenses_paid_latest_year, d.expenses_paid_previous_year, d.defined_contrib_paid,
-            d.assets_equities, d.assets_bonds, d.assets_real_estate,
-            d.assets_ldi, d.assets_cash, d.assets_other
-        ])
+        main_rows.append(row)
+
+    # Create DataFrames
+    main_df = pd.DataFrame(main_rows)
+    people_df = pd.DataFrame([{"Company Name": c.company_name, "People Data": "[People Placeholder]"} for c in companies]) if include_people else None
+    summary_df = pd.DataFrame([{"Company Name": c.company_name, "Summary Notes": "[Summary Notes Placeholder]"} for c in companies]) if include_summary else None
+
+    # Write to Excel in memory
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
+        main_df.to_excel(writer, sheet_name="Main Data", index=False)
+        if people_df is not None:
+            people_df.to_excel(writer, sheet_name="People Data", index=False)
+        if summary_df is not None:
+            summary_df.to_excel(writer, sheet_name="Summary Notes", index=False)
 
     output.seek(0)
-    return Response(
-        content=output.getvalue(),
-        media_type="text/csv",
-        headers={"Content-Disposition": "attachment; filename=key_financial_data.csv"}
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=exported_companies.xlsx"}
     )
