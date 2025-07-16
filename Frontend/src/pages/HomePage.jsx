@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import UploadIcon from "@mui/icons-material/CloudUpload";
+import Tooltip from "@mui/material/Tooltip";
 import {
   Box,
   Button,
@@ -25,6 +26,12 @@ import {
   MenuItem,
   Menu,
   Checkbox,
+  FormControlLabel,
+  FormGroup,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
 } from "@mui/material";
 import {
   Search as SearchIcon,
@@ -36,6 +43,7 @@ import {
 } from "@mui/icons-material";
 import axios from "axios";
 import { toast } from "react-toastify";
+import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 
 const HomePage = () => {
   const [page, setPage] = useState(0);
@@ -46,6 +54,12 @@ const HomePage = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploading, setUploading] = useState(false);
   const [uploadedFileName, setUploadedFileName] = useState("");
+  const [dropdow, setDropdownValue] = useState(null);
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [includeKeyData, setIncludeKeyData] = useState(true);
+  const [includePeopleData, setIncludePeopleData] = useState(false);
+  const [includeSummaryNotes, setIncludeSummaryNotes] = useState(false);
+  const isMenuOpen = Boolean(dropdow);
   const statusOptions = ["Not Started", "Processing", "Done"];
 
   const navigate = useNavigate();
@@ -82,7 +96,12 @@ const HomePage = () => {
       const token = localStorage.getItem("token");
       const response = await axios.post(
         `${process.env.REACT_APP_API_URL}/export-company-data`,
-        selectedIds,
+        {
+          ids: selectedIds,
+          key_financial: includeKeyData,
+          people_data: includePeopleData,
+          summary_notes: includeSummaryNotes,
+        },
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -92,11 +111,13 @@ const HomePage = () => {
         }
       );
 
-      const blob = new Blob([response.data], { type: "text/csv" });
+      const blob = new Blob([response.data], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "exported_companies.csv";
+      a.download = "exported_companies.xlsx";
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -106,7 +127,10 @@ const HomePage = () => {
       toast.error("Export failed");
       console.error("Export error:", error);
     }
+    setExportDialogOpen(false);
   };
+  const openExportDialog = () => setExportDialogOpen(true);
+  const closeExportDialog = () => setExportDialogOpen(false);
 
   const filteredCompanies = companyData.filter((company) =>
     company.company_name?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -134,14 +158,13 @@ const HomePage = () => {
           response.data.map((company, index) => ({
             ...company,
             selected: false,
-            status: staticStatusOptions[index % staticStatusOptions.length], // cycle through status values
+            status: staticStatusOptions[index % staticStatusOptions.length],
           }))
         );
       } catch (error) {
         console.error("Error fetching company data:", error);
       }
     };
-
     fetchCompanyData();
   }, []);
 
@@ -182,10 +205,6 @@ const HomePage = () => {
     }
   };
 
-  // const toggleSelectAll = (checked) => {
-  //   setCompanyData((prev) => prev.map((c) => ({ ...c, selected: checked })));
-  // };
-
   const toggleSelectAll = (checked) => {
     setCompanyData((prevData) =>
       prevData.map((company) =>
@@ -200,6 +219,33 @@ const HomePage = () => {
     setCompanyData((prev) =>
       prev.map((c) => (c.id === id ? { ...c, selected: !c.selected } : c))
     );
+  };
+
+  const handleMenuClick = (event) => {
+    setDropdownValue(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setDropdownValue(null);
+  };
+
+  const handleCustomSelect = (option) => {
+    setCompanyData((prev) =>
+      prev.map((company) => {
+        if (!paginatedCompanies.some((c) => c.id === company.id))
+          return company;
+
+        const isMatch =
+          option === "all" ||
+          (option === "approved" && company.approval_stage === 1) ||
+          (option === "unapproved" &&
+            (company.approval_stage === 0 || company.approval_stage === 2)) ||
+          company.status === option;
+
+        return { ...company, selected: isMatch };
+      })
+    );
+    handleMenuClose();
   };
 
   return (
@@ -343,11 +389,58 @@ const HomePage = () => {
                 <Box sx={{ display: "flex", gap: 2 }}>
                   <Button
                     variant="contained"
-                    onClick={handleExport}
+                    onClick={openExportDialog}
                     disabled={companyData.every((c) => !c.selected)}
                   >
                     Export Data
                   </Button>
+                  <Dialog open={exportDialogOpen} onClose={closeExportDialog}>
+                    <DialogTitle>Export Options</DialogTitle>
+                    <DialogContent>
+                      <FormGroup>
+                        <FormControlLabel
+                          control={
+                            <Checkbox
+                              checked={includeKeyData}
+                              onChange={(e) =>
+                                setIncludeKeyData(e.target.checked)
+                              }
+                            />
+                          }
+                          label="Include Key Financial Data"
+                        />
+                        <FormControlLabel
+                          control={
+                            <Checkbox
+                              checked={includePeopleData}
+                              onChange={(e) =>
+                                setIncludePeopleData(e.target.checked)
+                              }
+                            />
+                          }
+                          label="Include People Data"
+                        />
+                        <FormControlLabel
+                          control={
+                            <Checkbox
+                              checked={includeSummaryNotes}
+                              onChange={(e) =>
+                                setIncludeSummaryNotes(e.target.checked)
+                              }
+                            />
+                          }
+                          label="Include Summary Notes"
+                        />
+                      </FormGroup>
+                    </DialogContent>
+                    <DialogActions>
+                      <Button onClick={closeExportDialog}>Cancel</Button>
+                      <Button onClick={handleExport} variant="contained">
+                        Export
+                      </Button>
+                    </DialogActions>
+                  </Dialog>
+
                   <IconButton>
                     <FilterIcon />
                   </IconButton>
@@ -359,17 +452,67 @@ const HomePage = () => {
                   <TableHead>
                     <TableRow>
                       <TableCell padding="checkbox">
-                        <Checkbox
-                          checked={
-                            paginatedCompanies.length > 0 &&
-                            paginatedCompanies.every((c) => c.selected)
-                          }
-                          indeterminate={
-                            paginatedCompanies.some((c) => c.selected) &&
-                            !paginatedCompanies.every((c) => c.selected)
-                          }
-                          onChange={(e) => toggleSelectAll(e.target.checked)}
-                        />
+                        <Box sx={{ display: "flex", alignItems: "center" }}>
+                          <Checkbox
+                            checked={
+                              paginatedCompanies.length > 0 &&
+                              paginatedCompanies.every((c) => c.selected)
+                            }
+                            indeterminate={
+                              paginatedCompanies.some((c) => c.selected) &&
+                              !paginatedCompanies.every((c) => c.selected)
+                            }
+                            onChange={(e) => toggleSelectAll(e.target.checked)}
+                          />
+                          <IconButton
+                            size="small"
+                            onClick={handleMenuClick}
+                            aria-label="More filter options"
+                          >
+                            <ArrowDropDownIcon />
+                          </IconButton>
+                        </Box>
+
+                        <Menu
+                          anchorEl={dropdow}
+                          open={isMenuOpen}
+                          onClose={handleMenuClose}
+                          anchorOrigin={{
+                            vertical: "bottom",
+                            horizontal: "left",
+                          }}
+                          transformOrigin={{
+                            vertical: "top",
+                            horizontal: "left",
+                          }}
+                        >
+                          <MenuItem onClick={() => handleCustomSelect("all")}>
+                            Select All
+                          </MenuItem>
+                          <MenuItem
+                            onClick={() => handleCustomSelect("approved")}
+                          >
+                            Select Reviewed & Approved
+                          </MenuItem>
+                          <MenuItem
+                            onClick={() => handleCustomSelect("unapproved")}
+                          >
+                            Select Unapproved / Rejected
+                          </MenuItem>
+                          <MenuItem
+                            onClick={() => handleCustomSelect("Not Started")}
+                          >
+                            Select Not Started
+                          </MenuItem>
+                          <MenuItem
+                            onClick={() => handleCustomSelect("Processing")}
+                          >
+                            Select Processing
+                          </MenuItem>
+                          <MenuItem onClick={() => handleCustomSelect("Done")}>
+                            Select Done
+                          </MenuItem>
+                        </Menu>
                       </TableCell>
 
                       <TableCell>Company Name</TableCell>
