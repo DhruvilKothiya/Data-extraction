@@ -735,60 +735,6 @@ const HomePage = () => {
                   </TableBody>
                 </Table>
               </TableContainer>
-
-              <Box
-                sx={{ display: "flex", justifyContent: "space-between", mt: 2 }}
-              >
-                <Box sx={{ display: "flex", alignItems: "center" }}>
-                  <Typography variant="body2" color="text.secondary">
-                    Rows per page:
-                  </Typography>
-                  <Select
-                    value={rowsPerPage}
-                    onChange={handleChangeRowsPerPage}
-                    size="small"
-                    sx={{ ml: 1 }}
-                    variant="standard"
-                  >
-                    <MenuItem value={5}>5</MenuItem>
-                    <MenuItem value={10}>10</MenuItem>
-                    <MenuItem value={25}>25</MenuItem>
-                  </Select>
-                </Box>
-
-                <Box sx={{ display: "flex", alignItems: "center" }}>
-                  <Typography variant="body2" color="text.secondary">
-                    {`${page * rowsPerPage + 1}-${Math.min(
-                      (page + 1) * rowsPerPage,
-                      filteredCompanies.length
-                    )} of ${filteredCompanies.length}`}
-                  </Typography>
-                  <IconButton
-                    onClick={() => setPage((prev) => Math.max(prev - 1, 0))}
-                    disabled={page === 0}
-                    size="small"
-                  >
-                    <ArrowBackIosIcon fontSize="small" />
-                  </IconButton>
-                  <IconButton
-                    onClick={() =>
-                      setPage((prev) =>
-                        Math.min(
-                          prev + 1,
-                          Math.ceil(filteredCompanies.length / rowsPerPage) - 1
-                        )
-                      )
-                    }
-                    disabled={
-                      page >=
-                      Math.ceil(filteredCompanies.length / rowsPerPage) - 1
-                    }
-                    size="small"
-                  >
-                    <ArrowForwardIosIcon fontSize="small" />
-                  </IconButton>
-                </Box>
-              </Box>
             </CardContent>
           </Card>
         </Container>
