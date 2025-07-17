@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import UploadIcon from "@mui/icons-material/CloudUpload";
-import Tooltip from "@mui/material/Tooltip";
 import {
   Box,
   Button,
@@ -22,7 +21,6 @@ import {
   Typography,
   Avatar,
   Badge,
-  Select,
   MenuItem,
   Menu,
   Checkbox,
@@ -38,16 +36,14 @@ import {
   FilterList as FilterIcon,
   Notifications as NotificationsIcon,
   Person as PersonIcon,
-  ArrowBackIos as ArrowBackIosIcon,
-  ArrowForwardIos as ArrowForwardIosIcon,
+  // ArrowBackIos as ArrowBackIosIcon,
+  // ArrowForwardIos as ArrowForwardIosIcon,
 } from "@mui/icons-material";
 import axios from "axios";
 import { toast } from "react-toastify";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 
 const HomePage = () => {
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
   const [searchTerm, setSearchTerm] = useState("");
   const [profileAnchorEl, setProfileAnchorEl] = useState(null);
   const [companyData, setCompanyData] = useState([]);
@@ -60,18 +56,13 @@ const HomePage = () => {
   const [includePeopleData, setIncludePeopleData] = useState(false);
   const [includeSummaryNotes, setIncludeSummaryNotes] = useState(false);
   const isMenuOpen = Boolean(dropdow);
-  const statusOptions = ["Not Started", "Processing", "Done"];
+  const [approvalFilter, setApprovalFilter] = useState("all");
+
 
   const navigate = useNavigate();
 
-  const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
-  };
-
   const handleSearch = (event) => {
     setSearchTerm(event.target.value);
-    setPage(0);
   };
 
   const handleProfileMenuOpen = (event) => {
@@ -132,14 +123,23 @@ const HomePage = () => {
   const openExportDialog = () => setExportDialogOpen(true);
   const closeExportDialog = () => setExportDialogOpen(false);
 
-  const filteredCompanies = companyData.filter((company) =>
-    company.company_name?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+ const filteredCompanies = companyData.filter((company) => {
+  const nameMatch = company.company_name
+    ?.toLowerCase()
+    .includes(searchTerm.toLowerCase());
 
-  const paginatedCompanies = filteredCompanies.slice(
-    page * rowsPerPage,
-    page * rowsPerPage + rowsPerPage
-  );
+  const approvalMatch =
+    approvalFilter === "all"
+      ? true
+      : approvalFilter === "approved"
+      ? company.approval_stage === 1
+      : company.approval_stage === 0 || company.approval_stage === 2;
+
+  return nameMatch && approvalMatch;
+});
+
+
+  const paginatedCompanies = filteredCompanies.slice(0, 100);
 
   useEffect(() => {
     const fetchCompanyData = async () => {
@@ -208,7 +208,7 @@ const HomePage = () => {
   const toggleSelectAll = (checked) => {
     setCompanyData((prevData) =>
       prevData.map((company) =>
-        paginatedCompanies.some((c) => c.id === company.id)
+        filteredCompanies.some((c) => c.id === company.id)
           ? { ...company, selected: checked }
           : company
       )
@@ -448,6 +448,18 @@ const HomePage = () => {
                   }}
                   sx={{ width: 300 }}
                 />
+                <TextField
+                  select
+                  label="Filter by Approval"
+                  size="small"
+                  value={approvalFilter}
+                  onChange={(e) => setApprovalFilter(e.target.value)}
+                  sx={{ width: 200 }}
+                >
+                  <MenuItem value="all">All</MenuItem>
+                  <MenuItem value="approved">Approved</MenuItem>
+                  <MenuItem value="unapproved">Unapproved</MenuItem>
+                </TextField>
 
                 <Box sx={{ display: "flex", gap: 2 }}>
                   <Button
@@ -518,15 +530,16 @@ const HomePage = () => {
                         <Box sx={{ display: "flex", alignItems: "center" }}>
                           <Checkbox
                             checked={
-                              paginatedCompanies.length > 0 &&
-                              paginatedCompanies.every((c) => c.selected)
+                              filteredCompanies.length > 0 &&
+                              filteredCompanies.every((c) => c.selected)
                             }
                             indeterminate={
-                              paginatedCompanies.some((c) => c.selected) &&
-                              !paginatedCompanies.every((c) => c.selected)
+                              filteredCompanies.some((c) => c.selected) &&
+                              !filteredCompanies.every((c) => c.selected)
                             }
                             onChange={(e) => toggleSelectAll(e.target.checked)}
                           />
+
                           <IconButton
                             size="small"
                             onClick={handleMenuClick}
@@ -657,7 +670,25 @@ const HomePage = () => {
                             View
                           </a>
                         </TableCell>
-                        <TableCell>{company.approval_stage}</TableCell>
+                        <TableCell>
+                          <TextField
+                            select
+                            size="small"
+                            value={company.approval_stage}
+                            onChange={(e) =>
+                              handleApprovalChange(
+                                company.id,
+                                parseInt(e.target.value)
+                              )
+                            }
+                            variant="standard"
+                          >
+                            <MenuItem value={0}>Unapproved</MenuItem>
+                            <MenuItem value={1}>Approved</MenuItem>
+                            <MenuItem value={2}>Rejected</MenuItem>
+                          </TextField>
+                        </TableCell>
+
                         <TableCell>
                           <Box
                             sx={{
