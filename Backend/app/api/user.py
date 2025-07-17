@@ -196,6 +196,40 @@ def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to process file: {str(e)}")
 
+@router.post("/reprocess-company/{company_id}")
+def reprocess_company(company_id: int, db: Session = Depends(get_db)):
+    company = db.query(CompanyData).filter(CompanyData.id == company_id).first()
+
+    if not company:
+        raise HTTPException(status_code=404, detail="Company not found")
+
+    full_address = "Some fallback or retrieve from CSVFileData if available"
+
+    company.status = "Processing"
+    db.commit()
+
+    try:
+        api_response = requests.post(
+            "http://192.168.29.160:8000/extract-financial-data",
+            json={
+                "company": company.company_name,
+                "address": full_address
+            }
+        )
+
+        if api_response.status_code == 200:
+            company.status = "Done"
+        else:
+            company.status = "Not Started"
+
+    except Exception as e:
+        print(f"Reprocess failed: {e}")
+        company.status = "Not Started"
+
+    db.commit()
+    return {"message": f"Company reprocessed with status {company.status}"}
+
+
 @router.get("/key-financial-data/{company_id}")
 def get_key_financial_data(company_id: int, db: Session = Depends(get_db)):
     company = db.query(CompanyData).filter(CompanyData.id == company_id).first()
@@ -364,3 +398,34 @@ def export_selected_key_financial_data(
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": "attachment; filename=exported_companies.xlsx"}
     )
+    
+    
+@router.put("/update-registration-number/{company_id}")
+def update_registration_number(company_id: int, data: dict = Body(...), db: Session = Depends(get_db)):
+    new_number = data.get("registration_number")
+    if not new_number:
+        raise HTTPException(status_code=400, detail="registration_number is required")
+
+    company = db.query(CompanyData).filter(CompanyData.id == company_id).first()
+    if not company:
+        raise HTTPException(status_code=404, detail="Company not found")
+
+    company.registration_number = new_number
+    db.commit()
+    return {"message": "Registration number updated successfully"}
+
+
+@router.put("/update-approval-stage/{company_id}")
+def update_approval_stage(company_id: int, data: dict = Body(...), db: Session = Depends(get_db)):
+    new_stage = data.get("approval_stage")
+    if new_stage not in [0, 1, 2]:
+        raise HTTPException(status_code=400, detail="Invalid approval stage")
+
+    company = db.query(CompanyData).filter(CompanyData.id == company_id).first()
+    if not company:
+        raise HTTPException(status_code=404, detail="Company not found")
+
+    company.approval_stage = new_stage
+    db.commit()
+    return {"message": "Approval stage updated"}
+

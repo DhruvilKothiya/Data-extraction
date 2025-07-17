@@ -248,6 +248,61 @@ const HomePage = () => {
     handleMenuClose();
   };
 
+  const handleRerunAI = async (companyId) => {
+    try {
+      const token = localStorage.getItem("token");
+      await axios.post(
+        `${process.env.REACT_APP_API_URL}/reprocess-company/${companyId}`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success("Re-run started");
+    } catch (err) {
+      console.error(err);
+      toast.error("Re-run failed");
+    }
+  };
+
+  const handleRegistrationUpdate = async (companyId, newNumber) => {
+    try {
+      const token = localStorage.getItem("token");
+      await axios.put(
+        `${process.env.REACT_APP_API_URL}/update-registration-number/${companyId}`,
+        { registration_number: newNumber },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success("Registration number updated");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to update registration number");
+    }
+  };
+
+  const handleApprovalChange = async (companyId, newStage) => {
+  try {
+    const token = localStorage.getItem("token");
+    await axios.put(
+      `${process.env.REACT_APP_API_URL}/update-approval-stage/${companyId}`,
+      { approval_stage: newStage },
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+
+    setCompanyData((prev) =>
+      prev.map((c) =>
+        c.id === companyId ? { ...c, approval_stage: newStage } : c
+      )
+    );
+
+    toast.success("Approval stage updated");
+  } catch (error) {
+    console.error(error);
+    toast.error("Failed to update approval stage");
+  }
+};
+
+
   return (
     <Box sx={{ display: "flex", minHeight: "100vh" }}>
       <Sidebar />
@@ -290,7 +345,15 @@ const HomePage = () => {
           </Box>
         </Box>
 
-        <Container maxWidth="lg" sx={{ mt: 4, flex: 1 }}>
+        <Container
+          maxWidth={false}
+          sx={{
+            mt: 4,
+            flex: 1,
+            width: "1400px", // Or any value you prefer
+            mx: "auto", // Center the container horizontally
+          }}
+        >
           <Card sx={{ borderRadius: 2, boxShadow: 3 }}>
             <CardContent>
               <Box
@@ -517,6 +580,8 @@ const HomePage = () => {
 
                       <TableCell>Company Name</TableCell>
                       <TableCell>Registration Number</TableCell>
+                      <TableCell>Re-run AI</TableCell>
+
                       <TableCell>Rating</TableCell>
                       <TableCell>Key Financial Data</TableCell>
                       <TableCell>PDFs</TableCell>
@@ -537,7 +602,30 @@ const HomePage = () => {
                         </TableCell>
 
                         <TableCell>{company.company_name}</TableCell>
-                        <TableCell>{company.registration_number}</TableCell>
+                        <TableCell>
+                          <TextField
+                            size="small"
+                            value={company.registration_number || ""}
+                            onChange={(e) =>
+                              handleRegistrationUpdate(
+                                company.id,
+                                e.target.value
+                              )
+                            }
+                            variant="standard"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            color="primary"
+                            onClick={() => handleRerunAI(company.id)}
+                          >
+                            Re-run AI
+                          </Button>
+                        </TableCell>
+
                         <TableCell>{company.rating}</TableCell>
                         <TableCell>
                           <Button
