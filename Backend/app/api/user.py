@@ -124,6 +124,17 @@ def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
 
         for row in csv_reader:
             company_name = row.get("Company")
+            address_parts = [
+                row.get("Address1"),
+                row.get("Address2"),
+                row.get("Address3"),
+                row.get("City"),
+                row.get("County")
+            ]
+
+            # Remove None or empty values and join with commas
+            full_address = ", ".join([part for part in address_parts if part])
+
             if not company_name:
                 continue
 
@@ -157,17 +168,19 @@ def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
             else:
                 company_data.status = "Processing"
 
-            # Step 4: Call API (but skip mapping)
+            
             try:
                 api_response = requests.post(
                     "http://192.168.29.160:8000/extract-financial-data",
-                    json={"company_name": company_name}
+                    json={
+                        "company": company_name,
+                        "address": full_address
+                    }
                 )
                 print(api_response.status_code)
                 print(api_response.json())
 
                 if api_response.status_code == 200:
-                    # Skipping: map_api_data_to_model(json_data, db, key_data)
                     company_data.status = "Done"
                 else:
                     print(f"API failed for {company_name}: {api_response.status_code}")
