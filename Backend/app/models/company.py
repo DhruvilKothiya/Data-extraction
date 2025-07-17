@@ -9,6 +9,7 @@ class CompanyData(Base):
     selected = Column(Boolean, default=False)
     identifier = Column(String(20), unique=True, nullable=True)
     company_name = Column(String(255), nullable=False)
+    registration_number = Column(String(100), nullable=True)
     rating = Column(Integer)
     key_financial_data_id = Column(Integer, ForeignKey("key_financial_data.id"))
     key_financial_data = relationship("KeyFinancialData", backref="company")

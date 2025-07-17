@@ -516,6 +516,7 @@ const HomePage = () => {
                       </TableCell>
 
                       <TableCell>Company Name</TableCell>
+                      <TableCell>Registration Number</TableCell>
                       <TableCell>Rating</TableCell>
                       <TableCell>Key Financial Data</TableCell>
                       <TableCell>PDFs</TableCell>
@@ -536,6 +537,7 @@ const HomePage = () => {
                         </TableCell>
 
                         <TableCell>{company.company_name}</TableCell>
+                        <TableCell>{company.registration_number}</TableCell>
                         <TableCell>{company.rating}</TableCell>
                         <TableCell>
                           <Button

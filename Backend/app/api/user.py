@@ -102,6 +102,7 @@ def get_company_data(db: Session = Depends(get_db)):
             "selected": c.selected,
             "identifier": c.identifier,
             "company_name": c.company_name,
+            "registration_number":c.registration_number,
             "rating": c.rating,
             "key_financial_data": c.key_financial_data,
             "downloaded_pdfs": c.downloaded_pdfs,
