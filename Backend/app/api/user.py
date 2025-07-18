@@ -96,23 +96,44 @@ def reset_password(data: ResetPasswordSchema, db: Session = Depends(get_db)):
 @router.get("/company-data")
 def get_company_data(db: Session = Depends(get_db)):
     companies = db.query(CompanyData).all()
+
+    # Build a map of key_financial_data
+    key_data_ids = [c.key_financial_data_id for c in companies if c.key_financial_data_id]
+    key_data_list = db.query(KeyFinancialData).filter(KeyFinancialData.id.in_(key_data_ids)).all()
+    key_data_map = {k.id: k for k in key_data_list}
+
+    def extract_latest(json_data):
+        if not json_data or not isinstance(json_data, dict):
+            return None
+        try:
+            years = sorted(json_data.keys(), reverse=True)
+            return json_data[years[0]] if years else None
+        except Exception:
+            return None
+
     return [
         {
             "id": c.id,
-            "selected": c.selected,
-            "identifier": c.identifier,
             "company_name": c.company_name,
-            "registration_number":c.registration_number,
-            "rating": c.rating,
-            "key_financial_data": c.key_financial_data,
-            "downloaded_pdfs": c.downloaded_pdfs,
-            "pension_summary": c.pension_summary,
-            "director_info": c.director_info,
-            "approval_stage": c.approval_stage
+            "registration_number": c.registration_number,
+            "approval_stage": c.approval_stage,
+            "status": c.status,
+            "type_of_scheme": c.type_of_scheme,
+            "last_modified": c.last_modified,
+            "turnover_latest": extract_latest(key_data_map[c.key_financial_data_id].turnover_data)
+                if c.key_financial_data_id in key_data_map else None,
+            "assets_fair_value_latest": extract_latest(key_data_map[c.key_financial_data_id].fair_value_assets)
+                if c.key_financial_data_id in key_data_map else None,
+            "turnover_data": key_data_map[c.key_financial_data_id].turnover_data
+                if c.key_financial_data_id in key_data_map else {},
+            "fair_value_assets": key_data_map[c.key_financial_data_id].fair_value_assets
+                if c.key_financial_data_id in key_data_map else {},
+            "people_page_link": c.people_page_link or f"/people/{c.id}",
+            "summary_notes_link": c.summary_notes_link or f"/summary-notes/{c.id}",
+            "pdf_link": f"/view-pdfs/{c.id}"
         }
-        for c in companies  
-    ]  
-
+        for c in companies
+    ]
 @router.post("/upload-file")
 def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
     try:
