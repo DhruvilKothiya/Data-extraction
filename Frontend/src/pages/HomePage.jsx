@@ -138,7 +138,6 @@ const HomePage = () => {
   return nameMatch && approvalMatch;
 });
 
-
   const paginatedCompanies = filteredCompanies.slice(0, 100);
 
   useEffect(() => {
@@ -594,12 +593,15 @@ const HomePage = () => {
                       <TableCell>Company Name</TableCell>
                       <TableCell>Registration Number</TableCell>
                       <TableCell>Re-run AI</TableCell>
-
-                      <TableCell>Rating</TableCell>
+                      <TableCell>Turnover</TableCell>
+                      <TableCell>Asset Value</TableCell>
                       <TableCell>Key Financial Data</TableCell>
                       <TableCell>PDFs</TableCell>
-                      <TableCell>Pension Summary</TableCell>
-                      <TableCell>Director Info</TableCell>
+
+                      <TableCell>People Page</TableCell>
+                      <TableCell>Summary Notes</TableCell>
+                      <TableCell>Scheme Type</TableCell>
+                      <TableCell>Last Modified</TableCell>
                       <TableCell>Approval Stage</TableCell>
                       <TableCell>Status</TableCell>
                     </TableRow>
@@ -638,8 +640,74 @@ const HomePage = () => {
                             Re-run AI
                           </Button>
                         </TableCell>
+                        <TableCell>
+                          {company.turnover_data ? (
+                            <>
+                              {(() => {
+                                const years = Object.keys(company.turnover_data)
+                                  .sort()
+                                  .reverse();
+                                const latestYear = years[0];
+                                return (
+                                  <>
+                                    <span>
+                                      {latestYear}:{" "}
+                                      {company.turnover_data[latestYear]}
+                                    </span>{" "}
+                                    {years.length > 1 && (
+                                      <Button
+                                        size="small"
+                                        onClick={() =>
+                                          handleOpenDetail(company, "turnover")
+                                        }
+                                      >
+                                        More
+                                      </Button>
+                                    )}
+                                  </>
+                                );
+                              })()}
+                            </>
+                          ) : (
+                            "-"
+                          )}
+                        </TableCell>
 
-                        <TableCell>{company.rating}</TableCell>
+                        <TableCell>
+                          {company.fair_value_assets ? (
+                            <>
+                              {(() => {
+                                const years = Object.keys(
+                                  company.fair_value_assets
+                                )
+                                  .sort()
+                                  .reverse();
+                                const latestYear = years[0];
+                                return (
+                                  <>
+                                    <span>
+                                      {latestYear}:{" "}
+                                      {company.fair_value_assets[latestYear]}
+                                    </span>{" "}
+                                    {years.length > 1 && (
+                                      <Button
+                                        size="small"
+                                        onClick={() =>
+                                          handleOpenDetail(company, "assets")
+                                        }
+                                      >
+                                        More
+                                      </Button>
+                                    )}
+                                  </>
+                                );
+                              })()}
+                            </>
+                          ) : (
+                            "-"
+                          )}
+                        </TableCell>
+
                         <TableCell>
                           <Button
                             size="small"
@@ -660,17 +728,46 @@ const HomePage = () => {
                             View PDF
                           </a>
                         </TableCell>
-                        <TableCell>{company.pension_summary}</TableCell>
+
                         <TableCell>
+                          {company.people_page_link ? (
                           <a
-                            href={company.director_info}
+                              href={company.people_page_link}
                             target="_blank"
                             rel="noreferrer"
                           >
-                            View
+                              View People
                           </a>
+                          ) : (
+                            "-"
+                          )}
+                        </TableCell>
+
+                        <TableCell>
+                          {company.summary_notes_link ? (
+                            <a
+                              href={company.summary_notes_link}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              View Summary
+                            </a>
+                          ) : (
+                            "-"
+                          )}
+                        </TableCell>
+
+                        <TableCell>{company.type_of_scheme || "-"}</TableCell>
+
+                        <TableCell>
+                          {company.last_modified
+                            ? new Date(
+                                company.last_modified
+                              ).toLocaleDateString()
+                            : "-"}
                         </TableCell>
                         <TableCell>
+                          {company.status === "Done" ? (
                           <TextField
                             select
                             size="small"
@@ -687,6 +784,11 @@ const HomePage = () => {
                             <MenuItem value={1}>Approved</MenuItem>
                             <MenuItem value={2}>Rejected</MenuItem>
                           </TextField>
+                          ) : (
+                            <Typography variant="body2" color="text.secondary">
+                              Approval allowed after completion
+                            </Typography>
+                          )}
                         </TableCell>
 
                         <TableCell>
