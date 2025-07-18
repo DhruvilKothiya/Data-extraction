@@ -56,8 +56,11 @@ const HomePage = () => {
   const [includePeopleData, setIncludePeopleData] = useState(false);
   const [includeSummaryNotes, setIncludeSummaryNotes] = useState(false);
   const isMenuOpen = Boolean(dropdow);
+  const [openDetailDialog, setOpenDetailDialog] = useState(false);
+  const [detailType, setDetailType] = useState(""); // 'turnover' or 'assets'
+  const [selectedCompany, setSelectedCompany] = useState(null);
+  const [editedRegistrations, setEditedRegistrations] = useState({});
   const [approvalFilter, setApprovalFilter] = useState("all");
-
 
   const navigate = useNavigate();
 
@@ -77,6 +80,18 @@ const HomePage = () => {
     localStorage.clear();
     handleProfileMenuClose();
     navigate("/signin");
+  };
+
+  const handleOpenDetail = (company, type) => {
+    setSelectedCompany(company);
+    setDetailType(type);
+    setOpenDetailDialog(true);
+  };
+
+  const handleCloseDetailDialog = () => {
+    setOpenDetailDialog(false);
+    setSelectedCompany(null);
+    setDetailType("");
   };
 
   const handleExport = async () => {
@@ -123,20 +138,20 @@ const HomePage = () => {
   const openExportDialog = () => setExportDialogOpen(true);
   const closeExportDialog = () => setExportDialogOpen(false);
 
- const filteredCompanies = companyData.filter((company) => {
-  const nameMatch = company.company_name
-    ?.toLowerCase()
-    .includes(searchTerm.toLowerCase());
+  const filteredCompanies = companyData.filter((company) => {
+    const nameMatch = company.company_name
+      ?.toLowerCase()
+      .includes(searchTerm.toLowerCase());
 
-  const approvalMatch =
-    approvalFilter === "all"
-      ? true
-      : approvalFilter === "approved"
-      ? company.approval_stage === 1
-      : company.approval_stage === 0 || company.approval_stage === 2;
+    const approvalMatch =
+      approvalFilter === "all"
+        ? true
+        : approvalFilter === "approved"
+        ? company.approval_stage === 1
+        : company.approval_stage === 0 || company.approval_stage === 2;
 
-  return nameMatch && approvalMatch;
-});
+    return nameMatch && approvalMatch;
+  });
 
   const paginatedCompanies = filteredCompanies.slice(0, 100);
 
@@ -278,29 +293,28 @@ const HomePage = () => {
   };
 
   const handleApprovalChange = async (companyId, newStage) => {
-  try {
-    const token = localStorage.getItem("token");
-    await axios.put(
-      `${process.env.REACT_APP_API_URL}/update-approval-stage/${companyId}`,
-      { approval_stage: newStage },
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    );
+    try {
+      const token = localStorage.getItem("token");
+      await axios.put(
+        `${process.env.REACT_APP_API_URL}/update-approval-stage/${companyId}`,
+        { approval_stage: newStage },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
 
-    setCompanyData((prev) =>
-      prev.map((c) =>
-        c.id === companyId ? { ...c, approval_stage: newStage } : c
-      )
-    );
+      setCompanyData((prev) =>
+        prev.map((c) =>
+          c.id === companyId ? { ...c, approval_stage: newStage } : c
+        )
+      );
 
-    toast.success("Approval stage updated");
-  } catch (error) {
-    console.error(error);
-    toast.error("Failed to update approval stage");
-  }
-};
-
+      toast.success("Approval stage updated");
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to update approval stage");
+    }
+  };
 
   return (
     <Box sx={{ display: "flex", minHeight: "100vh" }}>
@@ -349,7 +363,7 @@ const HomePage = () => {
           sx={{
             mt: 4,
             flex: 1,
-            width: "1400px", // Or any value you prefer
+            width: "1430px", // Or any value you prefer
             mx: "auto", // Center the container horizontally
           }}
         >
@@ -618,17 +632,45 @@ const HomePage = () => {
 
                         <TableCell>{company.company_name}</TableCell>
                         <TableCell>
-                          <TextField
-                            size="small"
-                            value={company.registration_number || ""}
-                            onChange={(e) =>
-                              handleRegistrationUpdate(
-                                company.id,
-                                e.target.value
-                              )
-                            }
-                            variant="standard"
-                          />
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1,
+                            }}
+                          >
+                            <TextField
+                              size="small"
+                              value={
+                                editedRegistrations[company.id] ??
+                                company.registration_number ??
+                                ""
+                              }
+                              onChange={(e) =>
+                                setEditedRegistrations((prev) => ({
+                                  ...prev,
+                                  [company.id]: e.target.value,
+                                }))
+                              }
+                              variant="standard"
+                            />
+                            {editedRegistrations[company.id] !== undefined &&
+                              editedRegistrations[company.id] !==
+                                company.registration_number && (
+                                <Button
+                                  variant="outlined"
+                                  size="small"
+                                  onClick={() =>
+                                    handleRegistrationUpdate(
+                                      company.id,
+                                      editedRegistrations[company.id]
+                                    )
+                                  }
+                                >
+                                  Save
+                                </Button>
+                              )}
+                          </Box>
                         </TableCell>
                         <TableCell>
                           <Button
@@ -731,13 +773,13 @@ const HomePage = () => {
 
                         <TableCell>
                           {company.people_page_link ? (
-                          <a
+                            <a
                               href={company.people_page_link}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
+                              target="_blank"
+                              rel="noreferrer"
+                            >
                               View People
-                          </a>
+                            </a>
                           ) : (
                             "-"
                           )}
@@ -768,22 +810,22 @@ const HomePage = () => {
                         </TableCell>
                         <TableCell>
                           {company.status === "Done" ? (
-                          <TextField
-                            select
-                            size="small"
-                            value={company.approval_stage}
-                            onChange={(e) =>
-                              handleApprovalChange(
-                                company.id,
-                                parseInt(e.target.value)
-                              )
-                            }
-                            variant="standard"
-                          >
-                            <MenuItem value={0}>Unapproved</MenuItem>
-                            <MenuItem value={1}>Approved</MenuItem>
-                            <MenuItem value={2}>Rejected</MenuItem>
-                          </TextField>
+                            <TextField
+                              select
+                              size="small"
+                              value={company.approval_stage}
+                              onChange={(e) =>
+                                handleApprovalChange(
+                                  company.id,
+                                  parseInt(e.target.value)
+                                )
+                              }
+                              variant="standard"
+                            >
+                              <MenuItem value={0}>Unapproved</MenuItem>
+                              <MenuItem value={1}>Approved</MenuItem>
+                              <MenuItem value={2}>Rejected</MenuItem>
+                            </TextField>
                           ) : (
                             <Typography variant="body2" color="text.secondary">
                               Approval allowed after completion
@@ -836,6 +878,41 @@ const HomePage = () => {
                     ))}
                   </TableBody>
                 </Table>
+                <Dialog
+                  open={openDetailDialog}
+                  onClose={handleCloseDetailDialog}
+                  maxWidth="xs"
+                  fullWidth
+                >
+                  <DialogTitle>
+                    {detailType === "turnover"
+                      ? "Turnover Details"
+                      : "Asset Value Details"}
+                  </DialogTitle>
+                  <DialogContent dividers>
+                    {selectedCompany &&
+                      Object.entries(
+                        detailType === "turnover"
+                          ? selectedCompany.turnover_data
+                          : selectedCompany.fair_value_assets
+                      )
+                        .sort(([a], [b]) => b - a)
+                        .map(([year, value]) => (
+                          <Box
+                            key={year}
+                            display="flex"
+                            justifyContent="space-between"
+                            py={0.5}
+                          >
+                            <Typography>{year}</Typography>
+                            <Typography>{value}</Typography>
+                          </Box>
+                        ))}
+                  </DialogContent>
+                  <DialogActions>
+                    <Button onClick={handleCloseDetailDialog}>Close</Button>
+                  </DialogActions>
+                </Dialog>
               </TableContainer>
             </CardContent>
           </Card>
