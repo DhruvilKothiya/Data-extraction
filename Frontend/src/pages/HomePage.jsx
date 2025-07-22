@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import UploadIcon from "@mui/icons-material/CloudUpload";
+import RefreshIcon from "@mui/icons-material/Refresh";
 import {
   Box,
   Button,
@@ -30,14 +31,13 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  CircularProgress,
 } from "@mui/material";
 import {
   Search as SearchIcon,
   FilterList as FilterIcon,
   Notifications as NotificationsIcon,
   Person as PersonIcon,
-  // ArrowBackIos as ArrowBackIosIcon,
-  // ArrowForwardIos as ArrowForwardIosIcon,
 } from "@mui/icons-material";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -61,6 +61,9 @@ const HomePage = () => {
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [editedRegistrations, setEditedRegistrations] = useState({});
   const [approvalFilter, setApprovalFilter] = useState("all");
+  const [dataLoaded, setDataLoaded] = useState(false);
+  const [rerunLoading, setRerunLoading] = useState({});
+  const registrationTimersRef = useRef({});
 
   const navigate = useNavigate();
 
@@ -135,6 +138,7 @@ const HomePage = () => {
     }
     setExportDialogOpen(false);
   };
+
   const openExportDialog = () => setExportDialogOpen(true);
   const closeExportDialog = () => setExportDialogOpen(false);
 
@@ -158,6 +162,7 @@ const HomePage = () => {
   useEffect(() => {
     const fetchCompanyData = async () => {
       try {
+        setDataLoaded(false);
         const token = localStorage.getItem("token");
         const response = await axios.get(
           `${process.env.REACT_APP_API_URL}/company-data`,
@@ -167,16 +172,18 @@ const HomePage = () => {
             },
           }
         );
-        const staticStatusOptions = ["Not Started", "Processing", "Done"];
+
         setCompanyData(
-          response.data.map((company, index) => ({
+          response.data.map((company) => ({
             ...company,
             selected: false,
-            status: staticStatusOptions[index % staticStatusOptions.length],
           }))
         );
+        setDataLoaded(true);
       } catch (error) {
         console.error("Error fetching company data:", error);
+        setDataLoaded(true); // Still set to true to show error state
+        toast.error("Failed to fetch company data");
       }
     };
     fetchCompanyData();
@@ -212,6 +219,23 @@ const HomePage = () => {
       setUploadedFileName(response.data.filename);
       setUploading(false);
       toast.success("Uploaded Successfully");
+
+      // Refresh data after upload
+      const dataResponse = await axios.get(
+        `${process.env.REACT_APP_API_URL}/company-data`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      setCompanyData(
+        dataResponse.data.map((company) => ({
+          ...company,
+          selected: false,
+        }))
+      );
     } catch (error) {
       setUploading(false);
       toast.error("File upload failed");
@@ -264,16 +288,54 @@ const HomePage = () => {
 
   const handleRerunAI = async (companyId) => {
     try {
+      setRerunLoading((prev) => ({ ...prev, [companyId]: true }));
       const token = localStorage.getItem("token");
-      await axios.post(
+
+      const response = await axios.post(
         `${process.env.REACT_APP_API_URL}/reprocess-company/${companyId}`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      toast.success("Re-run started");
+
+      // Update the company status locally based on the response
+      setCompanyData((prev) =>
+        prev.map((company) =>
+          company.id === companyId
+            ? { ...company, status: response.data.new_status || "Processing" }
+            : company
+        )
+      );
+
+      toast.success("Re-run started successfully");
+
+      // Optionally refresh the data after a short delay to get updated information
+      setTimeout(async () => {
+        try {
+          const dataResponse = await axios.get(
+            `${process.env.REACT_APP_API_URL}/company-data`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+
+          setCompanyData(
+            dataResponse.data.map((company) => ({
+              ...company,
+              selected:
+                companyData.find((c) => c.id === company.id)?.selected || false,
+            }))
+          );
+        } catch (refreshError) {
+          console.error("Error refreshing data:", refreshError);
+        }
+      }, 2000);
     } catch (err) {
       console.error(err);
       toast.error("Re-run failed");
+    } finally {
+      setRerunLoading((prev) => ({ ...prev, [companyId]: false }));
     }
   };
 
@@ -285,6 +347,23 @@ const HomePage = () => {
         { registration_number: newNumber },
         { headers: { Authorization: `Bearer ${token}` } }
       );
+
+      // Update local state
+      setCompanyData((prev) =>
+        prev.map((company) =>
+          company.id === companyId
+            ? { ...company, registration_number: newNumber }
+            : company
+        )
+      );
+
+      // Clear the edited state
+      setEditedRegistrations((prev) => {
+        const newState = { ...prev };
+        delete newState[companyId];
+        return newState;
+      });
+
       toast.success("Registration number updated");
     } catch (err) {
       console.error(err);
@@ -295,7 +374,7 @@ const HomePage = () => {
   const handleApprovalChange = async (companyId, newStage) => {
     try {
       const token = localStorage.getItem("token");
-      await axios.put(
+      const response = await axios.put(
         `${process.env.REACT_APP_API_URL}/update-approval-stage/${companyId}`,
         { approval_stage: newStage },
         {
@@ -303,9 +382,20 @@ const HomePage = () => {
         }
       );
 
+      // If unapproved or rejected, override status to "Not Started"
+      const shouldSetNotStarted = newStage === 0 || newStage === 2;
+
       setCompanyData((prev) =>
         prev.map((c) =>
-          c.id === companyId ? { ...c, approval_stage: newStage } : c
+          c.id === companyId
+            ? {
+                ...c,
+                approval_stage: newStage,
+                status: shouldSetNotStarted
+                  ? "Not Started"
+                  : response.data.new_status || c.status,
+              }
+            : c
         )
       );
 
@@ -315,6 +405,50 @@ const HomePage = () => {
       toast.error("Failed to update approval stage");
     }
   };
+
+  const handleRegistrationChange = (companyId, value) => {
+    const company = companyData.find((c) => c.id === companyId);
+
+    setEditedRegistrations((prev) => ({
+      ...prev,
+      [companyId]: value,
+    }));
+
+    if (
+      company &&
+      (company.approval_stage === 0 || company.approval_stage === 2)
+    ) {
+      // Clear previous timer for this company if exists
+      if (registrationTimersRef.current[companyId]) {
+        clearTimeout(registrationTimersRef.current[companyId]);
+      }
+
+      registrationTimersRef.current[companyId] = setTimeout(() => {
+        handleRegistrationUpdate(companyId, value);
+        delete registrationTimersRef.current[companyId]; // Clean up
+      }, 500);
+    }
+  };
+
+  // Show loading state until data is loaded
+  if (!dataLoaded) {
+    return (
+      <Box sx={{ display: "flex", minHeight: "100vh" }}>
+        <Sidebar />
+        <Box
+          sx={{
+            flexGrow: 1,
+            ml: "280px",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <CircularProgress size={60} />
+        </Box>
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ display: "flex", minHeight: "100vh" }}>
@@ -363,8 +497,8 @@ const HomePage = () => {
           sx={{
             mt: 4,
             flex: 1,
-            width: "1430px", // Or any value you prefer
-            mx: "auto", // Center the container horizontally
+            width: "1430px",
+            mx: "auto",
           }}
         >
           <Card sx={{ borderRadius: 2, boxShadow: 3 }}>
@@ -611,7 +745,6 @@ const HomePage = () => {
                       <TableCell>Asset Value</TableCell>
                       <TableCell>Key Financial Data</TableCell>
                       <TableCell>PDFs</TableCell>
-
                       <TableCell>People Page</TableCell>
                       <TableCell>Summary Notes</TableCell>
                       <TableCell>Scheme Type</TableCell>
@@ -621,195 +754,213 @@ const HomePage = () => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {paginatedCompanies.map((company) => (
-                      <TableRow key={company.id}>
-                        <TableCell padding="checkbox">
-                          <Checkbox
-                            checked={company.selected}
-                            onChange={() => toggleSelectOne(company.id)}
-                          />
-                        </TableCell>
+                    {paginatedCompanies.map((company) => {
+                      const isRejectedOrUnapproved =
+                        company.approval_stage === 0 ||
+                        company.approval_stage === 2;
+                      const currentRegistrationValue =
+                        editedRegistrations[company.id] ??
+                        company.registration_number ??
+                        "";
+                      const hasRegistrationChanged =
+                        editedRegistrations[company.id] !== undefined &&
+                        editedRegistrations[company.id] !==
+                          company.registration_number;
 
-                        <TableCell>{company.company_name}</TableCell>
-                        <TableCell>
-                          <Box
-                            sx={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 1,
-                            }}
-                          >
-                            <TextField
-                              size="small"
-                              value={
-                                editedRegistrations[company.id] ??
-                                company.registration_number ??
-                                ""
-                              }
-                              onChange={(e) =>
-                                setEditedRegistrations((prev) => ({
-                                  ...prev,
-                                  [company.id]: e.target.value,
-                                }))
-                              }
-                              variant="standard"
+                      return (
+                        <TableRow key={company.id}>
+                          <TableCell padding="checkbox">
+                            <Checkbox
+                              checked={company.selected}
+                              onChange={() => toggleSelectOne(company.id)}
                             />
-                            {editedRegistrations[company.id] !== undefined &&
-                              editedRegistrations[company.id] !==
-                                company.registration_number && (
-                                <Button
-                                  variant="outlined"
-                                  size="small"
-                                  onClick={() =>
-                                    handleRegistrationUpdate(
-                                      company.id,
-                                      editedRegistrations[company.id]
-                                    )
-                                  }
-                                >
-                                  Save
-                                </Button>
+                          </TableCell>
+
+                          <TableCell>{company.company_name}</TableCell>
+
+                          <TableCell>
+                            <Box
+                              sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 1,
+                              }}
+                            >
+                              <TextField
+                                size="small"
+                                value={currentRegistrationValue}
+                                onChange={(e) =>
+                                  handleRegistrationChange(
+                                    company.id,
+                                    e.target.value
+                                  )
+                                }
+                                variant="standard"
+                                disabled={
+                                  !isRejectedOrUnapproved &&
+                                  !hasRegistrationChanged
+                                }
+                              />
+                              {!isRejectedOrUnapproved &&
+                                hasRegistrationChanged && (
+                                  <Button
+                                    variant="outlined"
+                                    size="small"
+                                    onClick={() =>
+                                      handleRegistrationUpdate(
+                                        company.id,
+                                        editedRegistrations[company.id]
+                                      )
+                                    }
+                                  >
+                                    Save
+                                  </Button>
+                                )}
+                            </Box>
+                          </TableCell>
+
+                          <TableCell>
+                            <IconButton
+                              color="primary"
+                              onClick={() => handleRerunAI(company.id)}
+                              disabled={rerunLoading[company.id]}
+                            >
+                              {rerunLoading[company.id] ? (
+                                <CircularProgress size={20} />
+                              ) : (
+                                <RefreshIcon />
                               )}
-                          </Box>
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            size="small"
-                            variant="outlined"
-                            color="primary"
-                            onClick={() => handleRerunAI(company.id)}
-                          >
-                            Re-run AI
-                          </Button>
-                        </TableCell>
-                        <TableCell>
-                          {company.turnover_data ? (
-                            <>
-                              {(() => {
-                                const years = Object.keys(company.turnover_data)
-                                  .sort()
-                                  .reverse();
-                                const latestYear = years[0];
-                                return (
-                                  <>
-                                    <span>
-                                      {latestYear}:{" "}
-                                      {company.turnover_data[latestYear]}
-                                    </span>{" "}
-                                    {years.length > 1 && (
-                                      <Button
-                                        size="small"
-                                        onClick={() =>
-                                          handleOpenDetail(company, "turnover")
-                                        }
-                                      >
-                                        More
-                                      </Button>
-                                    )}
-                                  </>
-                                );
-                              })()}
-                            </>
-                          ) : (
-                            "-"
-                          )}
-                        </TableCell>
+                            </IconButton>
+                          </TableCell>
 
-                        <TableCell>
-                          {company.fair_value_assets ? (
-                            <>
-                              {(() => {
-                                const years = Object.keys(
-                                  company.fair_value_assets
+                          <TableCell>
+                            {company.turnover_data
+                              ? (() => {
+                                  const years = Object.keys(
+                                    company.turnover_data
+                                  )
+                                    .sort()
+                                    .reverse();
+                                  const latestYear = years[0];
+                                  return (
+                                    <>
+                                      <span>
+                                        {latestYear}:{" "}
+                                        {company.turnover_data[latestYear]}
+                                      </span>
+                                      {years.length > 1 && (
+                                        <Button
+                                          size="small"
+                                          onClick={() =>
+                                            handleOpenDetail(
+                                              company,
+                                              "turnover"
+                                            )
+                                          }
+                                        >
+                                          More
+                                        </Button>
+                                      )}
+                                    </>
+                                  );
+                                })()
+                              : "-"}
+                          </TableCell>
+
+                          <TableCell>
+                            {company.fair_value_assets
+                              ? (() => {
+                                  const years = Object.keys(
+                                    company.fair_value_assets
+                                  )
+                                    .sort()
+                                    .reverse();
+                                  const latestYear = years[0];
+                                  return (
+                                    <>
+                                      <span>
+                                        {latestYear}:{" "}
+                                        {company.fair_value_assets[latestYear]}
+                                      </span>
+                                      {years.length > 1 && (
+                                        <Button
+                                          size="small"
+                                          onClick={() =>
+                                            handleOpenDetail(company, "assets")
+                                          }
+                                        >
+                                          More
+                                        </Button>
+                                      )}
+                                    </>
+                                  );
+                                })()
+                              : "-"}
+                          </TableCell>
+
+                          <TableCell>
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              onClick={() =>
+                                navigate(
+                                  `/company/${company.id}/financial-data`
                                 )
-                                  .sort()
-                                  .reverse();
-                                const latestYear = years[0];
-                                return (
-                                  <>
-                                    <span>
-                                      {latestYear}:{" "}
-                                      {company.fair_value_assets[latestYear]}
-                                    </span>{" "}
-                                    {years.length > 1 && (
-                                      <Button
-                                        size="small"
-                                        onClick={() =>
-                                          handleOpenDetail(company, "assets")
-                                        }
-                                      >
-                                        More
-                                      </Button>
-                                    )}
-                                  </>
-                                );
-                              })()}
-                            </>
-                          ) : (
-                            "-"
-                          )}
-                        </TableCell>
+                              }
+                            >
+                              View
+                            </Button>
+                          </TableCell>
 
-                        <TableCell>
-                          <Button
-                            size="small"
-                            variant="outlined"
-                            onClick={() =>
-                              navigate(`/company/${company.id}/financial-data`)
-                            }
-                          >
-                            View
-                          </Button>
-                        </TableCell>
-                        <TableCell>
-                          <a
-                            href={company.downloaded_pdfs}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            View PDF
-                          </a>
-                        </TableCell>
-
-                        <TableCell>
-                          {company.people_page_link ? (
+                          <TableCell>
                             <a
-                              href={company.people_page_link}
+                              href={company.downloaded_pdfs}
                               target="_blank"
                               rel="noreferrer"
                             >
-                              View People
+                              View PDF
                             </a>
-                          ) : (
-                            "-"
-                          )}
-                        </TableCell>
+                          </TableCell>
 
-                        <TableCell>
-                          {company.summary_notes_link ? (
-                            <a
-                              href={company.summary_notes_link}
-                              target="_blank"
-                              rel="noreferrer"
-                            >
-                              View Summary
-                            </a>
-                          ) : (
-                            "-"
-                          )}
-                        </TableCell>
+                          <TableCell>
+                            {company.people_page_link ? (
+                              <a
+                                href={company.people_page_link}
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                View People
+                              </a>
+                            ) : (
+                              "-"
+                            )}
+                          </TableCell>
 
-                        <TableCell>{company.type_of_scheme || "-"}</TableCell>
+                          <TableCell>
+                            {company.summary_notes_link ? (
+                              <a
+                                href={company.summary_notes_link}
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                View Summary
+                              </a>
+                            ) : (
+                              "-"
+                            )}
+                          </TableCell>
 
-                        <TableCell>
-                          {company.last_modified
-                            ? new Date(
-                                company.last_modified
-                              ).toLocaleDateString()
-                            : "-"}
-                        </TableCell>
-                        <TableCell>
-                          {company.status === "Done" ? (
+                          <TableCell>{company.type_of_scheme || "-"}</TableCell>
+
+                          <TableCell>
+                            {company.last_modified
+                              ? new Date(
+                                  company.last_modified
+                                ).toLocaleDateString()
+                              : "-"}
+                          </TableCell>
+
+                          <TableCell>
                             <TextField
                               select
                               size="small"
@@ -826,56 +977,52 @@ const HomePage = () => {
                               <MenuItem value={1}>Approved</MenuItem>
                               <MenuItem value={2}>Rejected</MenuItem>
                             </TextField>
-                          ) : (
-                            <Typography variant="body2" color="text.secondary">
-                              Approval allowed after completion
-                            </Typography>
-                          )}
-                        </TableCell>
+                          </TableCell>
 
-                        <TableCell>
-                          <Box
-                            sx={{
-                              display: "inline-flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              px: 2,
-                              py: 0.4,
-                              borderRadius: "12px",
-                              fontSize: "0.75rem",
-                              fontWeight: 500,
-                              letterSpacing: "0.5px",
-                              textTransform: "capitalize",
-                              color:
-                                company.status === "Done"
-                                  ? "#1565c0"
-                                  : company.status === "Processing"
-                                  ? "#2e7d32"
-                                  : "#c62828",
-                              backgroundColor:
-                                company.status === "Done"
-                                  ? "rgba(21, 101, 192, 0.1)"
-                                  : company.status === "Processing"
-                                  ? "rgba(46, 125, 50, 0.1)"
-                                  : "rgba(198, 40, 40, 0.1)",
-                              border: "1px solid",
-                              borderColor:
-                                company.status === "Done"
-                                  ? "rgba(21, 101, 192, 0.3)"
-                                  : company.status === "Processing"
-                                  ? "rgba(46, 125, 50, 0.3)"
-                                  : "rgba(198, 40, 40, 0.3)",
-                              boxShadow: "0 0 0 1px rgba(0,0,0,0.02)",
-                              backdropFilter: "blur(2px)",
-                              minWidth: "80px",
-                              textAlign: "center",
-                            }}
-                          >
-                            {company.status}
-                          </Box>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                          <TableCell>
+                            <Box
+                              sx={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                px: 2,
+                                py: 0.4,
+                                borderRadius: "12px",
+                                fontSize: "0.75rem",
+                                fontWeight: 500,
+                                letterSpacing: "0.5px",
+                                textTransform: "capitalize",
+                                color:
+                                  company.status === "Done"
+                                    ? "#1565c0"
+                                    : company.status === "Processing"
+                                    ? "#2e7d32"
+                                    : "#c62828",
+                                backgroundColor:
+                                  company.status === "Done"
+                                    ? "rgba(21, 101, 192, 0.1)"
+                                    : company.status === "Processing"
+                                    ? "rgba(46, 125, 50, 0.1)"
+                                    : "rgba(198, 40, 40, 0.1)",
+                                border: "1px solid",
+                                borderColor:
+                                  company.status === "Done"
+                                    ? "rgba(21, 101, 192, 0.3)"
+                                    : company.status === "Processing"
+                                    ? "rgba(46, 125, 50, 0.3)"
+                                    : "rgba(198, 40, 40, 0.3)",
+                                boxShadow: "0 0 0 1px rgba(0,0,0,0.02)",
+                                backdropFilter: "blur(2px)",
+                                minWidth: "80px",
+                                textAlign: "center",
+                              }}
+                            >
+                              {company.status}
+                            </Box>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
                 <Dialog

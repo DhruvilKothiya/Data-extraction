@@ -7,7 +7,7 @@ class KeyFinancialData(Base):
     id = Column(Integer, primary_key=True, index=True)
     company_name = Column(String(255), nullable=True)
     company_status = Column(String(50), nullable=True)
-    company_registered_number = Column(Integer, nullable=True, unique=True)
+    company_registered_number = Column(String(50), nullable=True) 
     incorporation_date = Column(Date, nullable=True)
     latest_accounts_date = Column(Date, nullable=True)
     
