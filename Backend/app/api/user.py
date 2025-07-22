@@ -115,7 +115,8 @@ def get_company_data(db: Session = Depends(get_db)):
         {
             "id": c.id,
             "company_name": c.company_name,
-            "registration_number": c.registration_number,
+            "registration_number": key_data_map[c.key_financial_data_id].company_registered_number
+                if c.key_financial_data_id in key_data_map else None,
             "approval_stage": c.approval_stage,
             "status": c.status,
             "type_of_scheme": c.type_of_scheme,
@@ -134,6 +135,7 @@ def get_company_data(db: Session = Depends(get_db)):
         }
         for c in companies
     ]
+
 @router.post("/upload-file")
 def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
     try:
@@ -193,7 +195,7 @@ def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
             
             try:
                 api_response = requests.post(
-                    "http://192.168.29.160:8000/extract-financial-data",
+                    "http://192.168.29.160:8000/process-company",
                     json={
                         "company": company_name,
                         "address": full_address
@@ -224,24 +226,42 @@ def reprocess_company(company_id: int, db: Session = Depends(get_db)):
     if not company:
         raise HTTPException(status_code=404, detail="Company not found")
 
-    full_address = "Some fallback or retrieve from CSVFileData if available"
-
     company.status = "Processing"
     db.commit()
 
     try:
+        registration_number = (company.key_financial_data.company_registered_number if company.key_financial_data else "")
+
+        
         api_response = requests.post(
-            "http://192.168.29.160:8000/extract-financial-data",
-            json={
-                "company": company.company_name,
-                "address": full_address
-            }
+            "http://192.168.29.160:8000/process-company",
+            json={"registration_number": registration_number}
         )
 
         if api_response.status_code == 200:
+            ml_data = api_response.json()
+            
+            key_data = db.query(KeyFinancialData).filter(
+                KeyFinancialData.id == company.key_financial_data_id
+            ).first()
+
+            if key_data and ml_data:
+                if 'turnover_data' in ml_data:
+                    key_data.turnover_data = ml_data['turnover_data']
+                if 'fair_value_assets' in ml_data:
+                    key_data.fair_value_assets = ml_data['fair_value_assets']
+                if 'profit_data' in ml_data:
+                    key_data.profit_data = ml_data['profit_data']
+                if 'surplus_data' in ml_data:
+                    key_data.surplus_data = ml_data['surplus_data']
+                # Add more fields as needed
+
+                db.commit()
+
             company.status = "Done"
         else:
             company.status = "Not Started"
+            print(f"API failed for {company.company_name}: {api_response.status_code}")
 
     except Exception as e:
         print(f"Reprocess failed: {e}")
@@ -249,7 +269,6 @@ def reprocess_company(company_id: int, db: Session = Depends(get_db)):
 
     db.commit()
     return {"message": f"Company reprocessed with status {company.status}"}
-
 
 @router.get("/key-financial-data/{company_id}")
 def get_key_financial_data(company_id: int, db: Session = Depends(get_db)):
@@ -431,7 +450,11 @@ def update_registration_number(company_id: int, data: dict = Body(...), db: Sess
     if not company:
         raise HTTPException(status_code=404, detail="Company not found")
 
-    company.registration_number = new_number
+    key_data = db.query(KeyFinancialData).filter(KeyFinancialData.id == company.key_financial_data_id).first()
+    if not key_data:
+        raise HTTPException(status_code=404, detail="Key financial data not found")
+
+    key_data.company_registered_number = new_number
     db.commit()
     return {"message": "Registration number updated successfully"}
 
@@ -447,6 +470,13 @@ def update_approval_stage(company_id: int, data: dict = Body(...), db: Session =
         raise HTTPException(status_code=404, detail="Company not found")
 
     company.approval_stage = new_stage
+    
+    # If approval stage is set to Rejected (2) or Unapproved (0), set status to "Not Started"
+    if new_stage in [0, 2]:
+        company.status = "Not Started"  
+    
     db.commit()
-    return {"message": "Approval stage updated"}
-
+    return {
+        "message": "Approval stage updated",
+        "new_status": company.status
+    }
