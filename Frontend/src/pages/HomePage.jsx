@@ -32,18 +32,28 @@ import {
   DialogContent,
   DialogTitle,
   CircularProgress,
+  useTheme,
+  useMediaQuery,
+  Stack,
 } from "@mui/material";
 import {
   Search as SearchIcon,
   FilterList as FilterIcon,
   Notifications as NotificationsIcon,
   Person as PersonIcon,
+  Menu as MenuIcon,
 } from "@mui/icons-material";
 import axios from "axios";
 import { toast } from "react-toastify";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 
 const HomePage = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isTablet = useMediaQuery(theme.breakpoints.down('lg'));
+  const isSmall = useMediaQuery(theme.breakpoints.down('sm'));
+  
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [profileAnchorEl, setProfileAnchorEl] = useState(null);
   const [companyData, setCompanyData] = useState([]);
@@ -66,6 +76,13 @@ const HomePage = () => {
   const registrationTimersRef = useRef({});
 
   const navigate = useNavigate();
+
+  // Responsive sidebar width
+  const sidebarWidth = isMobile ? 0 : isTablet ? 240 : 280;
+
+  const handleDrawerToggle = () => {
+    setMobileOpen(!mobileOpen);
+  };
 
   const handleSearch = (event) => {
     setSearchTerm(event.target.value);
@@ -182,7 +199,7 @@ const HomePage = () => {
         setDataLoaded(true);
       } catch (error) {
         console.error("Error fetching company data:", error);
-        setDataLoaded(true); // Still set to true to show error state
+        setDataLoaded(true);
         toast.error("Failed to fetch company data");
       }
     };
@@ -297,7 +314,6 @@ const HomePage = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      // Update the company status locally based on the response
       setCompanyData((prev) =>
         prev.map((company) =>
           company.id === companyId
@@ -308,7 +324,6 @@ const HomePage = () => {
 
       toast.success("Re-run started successfully");
 
-      // Optionally refresh the data after a short delay to get updated information
       setTimeout(async () => {
         try {
           const dataResponse = await axios.get(
@@ -348,7 +363,6 @@ const HomePage = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      // Update local state
       setCompanyData((prev) =>
         prev.map((company) =>
           company.id === companyId
@@ -357,7 +371,6 @@ const HomePage = () => {
         )
       );
 
-      // Clear the edited state
       setEditedRegistrations((prev) => {
         const newState = { ...prev };
         delete newState[companyId];
@@ -382,7 +395,6 @@ const HomePage = () => {
         }
       );
 
-      // If unapproved or rejected, override status to "Not Started"
       const shouldSetNotStarted = newStage === 0 || newStage === 2;
 
       setCompanyData((prev) =>
@@ -418,14 +430,13 @@ const HomePage = () => {
       company &&
       (company.approval_stage === 0 || company.approval_stage === 2)
     ) {
-      // Clear previous timer for this company if exists
       if (registrationTimersRef.current[companyId]) {
         clearTimeout(registrationTimersRef.current[companyId]);
       }
 
       registrationTimersRef.current[companyId] = setTimeout(() => {
         handleRegistrationUpdate(companyId, value);
-        delete registrationTimersRef.current[companyId]; // Clean up
+        delete registrationTimersRef.current[companyId];
       }, 500);
     }
   };
@@ -434,11 +445,11 @@ const HomePage = () => {
   if (!dataLoaded) {
     return (
       <Box sx={{ display: "flex", minHeight: "100vh" }}>
-        <Sidebar />
+        <Sidebar mobileOpen={mobileOpen} onDrawerToggle={handleDrawerToggle} />
         <Box
           sx={{
             flexGrow: 1,
-            ml: "280px",
+            ml: { xs: 0, md: `${sidebarWidth}px` },
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
@@ -452,22 +463,23 @@ const HomePage = () => {
 
   return (
     <Box sx={{ display: "flex", minHeight: "100vh" }}>
-      <Sidebar />
+      <Sidebar mobileOpen={mobileOpen} onDrawerToggle={handleDrawerToggle} />
 
       <Box
         sx={{
           flexGrow: 1,
-          ml: "280px",
+          ml: { xs: 0, md: `${sidebarWidth}px` },
           display: "flex",
           flexDirection: "column",
         }}
       >
+        {/* Header */}
         <Box
           sx={{
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            p: 2,
+            p: { xs: 1.5, sm: 2 },
             borderBottom: "1px solid #e0e0e0",
             backgroundColor: "white",
             position: "sticky",
@@ -475,42 +487,60 @@ const HomePage = () => {
             zIndex: 1100,
           }}
         >
-          <Typography variant="h5" sx={{ fontWeight: "bold" }}>
-            Company
-          </Typography>
-          <Box sx={{ display: "flex", gap: 2 }}>
-            <IconButton>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            {isMobile && (
+              <IconButton
+                color="inherit"
+                aria-label="open drawer"
+                edge="start"
+                onClick={handleDrawerToggle}
+              >
+                <MenuIcon />
+              </IconButton>
+            )}
+            <Typography 
+              variant={isSmall ? "h6" : "h5"} 
+              sx={{ fontWeight: "bold" }}
+            >
+              Company
+            </Typography>
+          </Box>
+          <Box sx={{ display: "flex", gap: { xs: 1, sm: 2 } }}>
+            <IconButton size={isSmall ? "small" : "medium"}>
               <Badge badgeContent={2} color="error">
                 <NotificationsIcon />
               </Badge>
             </IconButton>
-            <IconButton onClick={handleProfileMenuOpen}>
-              <Avatar sx={{ width: 32, height: 32 }}>
+            <IconButton onClick={handleProfileMenuOpen} size={isSmall ? "small" : "medium"}>
+              <Avatar sx={{ width: { xs: 28, sm: 32 }, height: { xs: 28, sm: 32 } }}>
                 <PersonIcon />
               </Avatar>
             </IconButton>
           </Box>
         </Box>
 
+        {/* Main Content */}
         <Container
           maxWidth={false}
           sx={{
-            mt: 4,
+            mt: { xs: 2, sm: 4 },
             flex: 1,
-            width: "1430px",
+            px: { xs: 1, sm: 2, md: 3 },
+            maxWidth: { xs: '100%', lg: '1430px' },
             mx: "auto",
           }}
         >
           <Card sx={{ borderRadius: 2, boxShadow: 3 }}>
-            <CardContent>
+            <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+              {/* Upload Section */}
               <Box
                 sx={{
                   border: "2px dashed #aaa",
                   borderRadius: 2,
-                  p: 4,
+                  p: { xs: 2, sm: 4 },
                   textAlign: "center",
                   backgroundColor: "#f5f5f5",
-                  mb: 4,
+                  mb: { xs: 2, sm: 4 },
                 }}
               >
                 <input
@@ -528,12 +558,16 @@ const HomePage = () => {
                 />
                 <label htmlFor="csv-upload" style={{ cursor: "pointer" }}>
                   <Box sx={{ display: "flex", justifyContent: "center" }}>
-                    <UploadIcon sx={{ fontSize: 40, mb: 1 }} />
+                    <UploadIcon sx={{ fontSize: { xs: 30, sm: 40 }, mb: 1 }} />
                   </Box>
-                  <Button variant="outlined" component="span">
+                  <Button 
+                    variant="outlined" 
+                    component="span"
+                    size={isSmall ? "small" : "medium"}
+                  >
                     Choose CSV File to Upload
                   </Button>
-                  <Typography variant="body2" mt={1}>
+                  <Typography variant="body2" mt={1} fontSize={{ xs: '0.75rem', sm: '0.875rem' }}>
                     or drag and drop your CSV here
                   </Typography>
                   {uploadedFileName && (
@@ -541,6 +575,7 @@ const HomePage = () => {
                       variant="body2"
                       mt={1}
                       sx={{ color: "green", fontWeight: 500 }}
+                      fontSize={{ xs: '0.75rem', sm: '0.875rem' }}
                     >
                       Uploaded File: {uploadedFileName}
                     </Typography>
@@ -548,7 +583,7 @@ const HomePage = () => {
                 </label>
                 {uploading && (
                   <Box sx={{ mt: 2 }}>
-                    <Typography variant="body2">
+                    <Typography variant="body2" fontSize={{ xs: '0.75rem', sm: '0.875rem' }}>
                       {uploadProgress}% uploaded
                     </Typography>
                     <Box
@@ -573,12 +608,14 @@ const HomePage = () => {
                 )}
               </Box>
 
-              <Box
+              {/* Controls Section */}
+              <Stack
+                direction={{ xs: "column", sm: "row" }}
+                spacing={2}
                 sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
                   mb: 2,
-                  alignItems: "center",
+                  alignItems: { xs: 'stretch', sm: 'center' },
+                  justifyContent: 'space-between'
                 }}
               >
                 <TextField
@@ -593,89 +630,68 @@ const HomePage = () => {
                       </InputAdornment>
                     ),
                   }}
-                  sx={{ width: 300 }}
+                  sx={{ 
+                    width: { xs: '100%', sm: 300 },
+                    order: { xs: 1, sm: 1 }
+                  }}
                 />
+                
                 <TextField
                   select
                   label="Filter by Approval"
                   size="small"
                   value={approvalFilter}
                   onChange={(e) => setApprovalFilter(e.target.value)}
-                  sx={{ width: 200 }}
+                  sx={{ 
+                    width: { xs: '100%', sm: 200 },
+                    order: { xs: 2, sm: 2 }
+                  }}
                 >
                   <MenuItem value="all">All</MenuItem>
                   <MenuItem value="approved">Approved</MenuItem>
                   <MenuItem value="unapproved">Unapproved</MenuItem>
                 </TextField>
 
-                <Box sx={{ display: "flex", gap: 2 }}>
+                <Stack 
+                  direction="row" 
+                  spacing={1}
+                  sx={{ 
+                    order: { xs: 3, sm: 3 },
+                    justifyContent: { xs: 'center', sm: 'flex-end' }
+                  }}
+                >
                   <Button
                     variant="contained"
                     onClick={openExportDialog}
                     disabled={companyData.every((c) => !c.selected)}
+                    size={isSmall ? "small" : "medium"}
                   >
                     Export Data
                   </Button>
-                  <Dialog open={exportDialogOpen} onClose={closeExportDialog}>
-                    <DialogTitle>Export Options</DialogTitle>
-                    <DialogContent>
-                      <FormGroup>
-                        <FormControlLabel
-                          control={
-                            <Checkbox
-                              checked={includeKeyData}
-                              onChange={(e) =>
-                                setIncludeKeyData(e.target.checked)
-                              }
-                            />
-                          }
-                          label="Include Key Financial Data"
-                        />
-                        <FormControlLabel
-                          control={
-                            <Checkbox
-                              checked={includePeopleData}
-                              onChange={(e) =>
-                                setIncludePeopleData(e.target.checked)
-                              }
-                            />
-                          }
-                          label="Include People Data"
-                        />
-                        <FormControlLabel
-                          control={
-                            <Checkbox
-                              checked={includeSummaryNotes}
-                              onChange={(e) =>
-                                setIncludeSummaryNotes(e.target.checked)
-                              }
-                            />
-                          }
-                          label="Include Summary Notes"
-                        />
-                      </FormGroup>
-                    </DialogContent>
-                    <DialogActions>
-                      <Button onClick={closeExportDialog}>Cancel</Button>
-                      <Button onClick={handleExport} variant="contained">
-                        Export
-                      </Button>
-                    </DialogActions>
-                  </Dialog>
-
-                  <IconButton>
+                  <IconButton size={isSmall ? "small" : "medium"}>
                     <FilterIcon />
                   </IconButton>
-                </Box>
-              </Box>
+                </Stack>
+              </Stack>
 
-              <TableContainer component={Paper} elevation={0}>
-                <Table>
+              {/* Table Section */}
+              <TableContainer 
+                component={Paper} 
+                elevation={0}
+                sx={{
+                  overflowX: 'auto',
+                  '& .MuiTable-root': {
+                    minWidth: { xs: 800, sm: 1000 }
+                  }
+                }}
+              >
+                <Table size={isSmall ? "small" : "medium"}>
                   <TableHead>
                     <TableRow>
                       <TableCell padding="checkbox">
                         <Box sx={{ display: "flex", alignItems: "center" }}>
                           <Checkbox
+                            size={isSmall ? "small" : "medium"}
                             checked={
                               filteredCompanies.length > 0 &&
                               filteredCompanies.every((c) => c.selected)
@@ -744,11 +760,15 @@ const HomePage = () => {
                       <TableCell>Turnover</TableCell>
                       <TableCell>Asset Value</TableCell>
                       <TableCell>Key Financial Data</TableCell>
-                      <TableCell>PDFs</TableCell>
-                      <TableCell>People Page</TableCell>
-                      <TableCell>Summary Notes</TableCell>
-                      <TableCell>Scheme Type</TableCell>
-                      <TableCell>Last Modified</TableCell>
+                      {!isSmall && (
+                        <>
+                          <TableCell>PDFs</TableCell>
+                          <TableCell>People Page</TableCell>
+                          <TableCell>Summary Notes</TableCell>
+                          <TableCell>Scheme Type</TableCell>
+                          <TableCell>Last Modified</TableCell>
+                        </>
+                      )}
                       <TableCell>Approval Stage</TableCell>
                       <TableCell>Status</TableCell>
                     </TableRow>
@@ -771,12 +791,23 @@ const HomePage = () => {
                         <TableRow key={company.id}>
                           <TableCell padding="checkbox">
                             <Checkbox
+                              size={isSmall ? "small" : "medium"}
                               checked={company.selected}
                               onChange={() => toggleSelectOne(company.id)}
                             />
                           </TableCell>
 
-                          <TableCell>{company.company_name}</TableCell>
+                          <TableCell>
+                            <Typography 
+                              variant="body2" 
+                              sx={{ 
+                                fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                                wordBreak: 'break-word'
+                              }}
+                            >
+                              {company.company_name}
+                            </Typography>
+                          </TableCell>
 
                           <TableCell>
                             <Box
@@ -784,6 +815,7 @@ const HomePage = () => {
                                 display: "flex",
                                 alignItems: "center",
                                 gap: 1,
+                                minWidth: 120
                               }}
                             >
                               <TextField
@@ -800,6 +832,11 @@ const HomePage = () => {
                                   !isRejectedOrUnapproved &&
                                   !hasRegistrationChanged
                                 }
+                                sx={{
+                                  '& .MuiInputBase-input': {
+                                    fontSize: { xs: '0.75rem', sm: '0.875rem' }
+                                  }
+                                }}
                               />
                               {!isRejectedOrUnapproved &&
                                 hasRegistrationChanged && (
@@ -812,6 +849,7 @@ const HomePage = () => {
                                         editedRegistrations[company.id]
                                       )
                                     }
+                                    sx={{ fontSize: '0.75rem' }}
                                   >
                                     Save
                                   </Button>
@@ -824,78 +862,91 @@ const HomePage = () => {
                               color="primary"
                               onClick={() => handleRerunAI(company.id)}
                               disabled={rerunLoading[company.id]}
+                              size={isSmall ? "small" : "medium"}
                             >
                               {rerunLoading[company.id] ? (
-                                <CircularProgress size={20} />
+                                <CircularProgress size={isSmall ? 15 : 20} />
                               ) : (
-                                <RefreshIcon />
+                                <RefreshIcon sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }} />
                               )}
                             </IconButton>
                           </TableCell>
 
                           <TableCell>
-                            {company.turnover_data
-                              ? (() => {
-                                  const years = Object.keys(
-                                    company.turnover_data
-                                  )
-                                    .sort()
-                                    .reverse();
-                                  const latestYear = years[0];
-                                  return (
-                                    <>
-                                      <span>
-                                        {latestYear}:{" "}
-                                        {company.turnover_data[latestYear]}
-                                      </span>
-                                      {years.length > 1 && (
-                                        <Button
-                                          size="small"
-                                          onClick={() =>
-                                            handleOpenDetail(
-                                              company,
-                                              "turnover"
-                                            )
-                                          }
+                            <Box sx={{ minWidth: 100 }}>
+                              {company.turnover_data
+                                ? (() => {
+                                    const years = Object.keys(
+                                      company.turnover_data
+                                    )
+                                      .sort()
+                                      .reverse();
+                                    const latestYear = years[0];
+                                    return (
+                                      <>
+                                        <Typography 
+                                          variant="body2"
+                                          sx={{ fontSize: { xs: '0.7rem', sm: '0.8rem' } }}
                                         >
-                                          More
-                                        </Button>
-                                      )}
-                                    </>
-                                  );
-                                })()
-                              : "-"}
+                                          {latestYear}:{" "}
+                                          {company.turnover_data[latestYear]}
+                                        </Typography>
+                                        {years.length > 1 && (
+                                          <Button
+                                            size="small"
+                                            onClick={() =>
+                                              handleOpenDetail(
+                                                company,
+                                                "turnover"
+                                              )
+                                            }
+                                            sx={{ fontSize: '0.7rem', p: 0.5 }}
+                                          >
+                                            More
+                                          </Button>
+                                        )}
+                                      </>
+                                    );
+                                  })()
+                                : "-"}
+                            </Box>
                           </TableCell>
 
                           <TableCell>
-                            {company.fair_value_assets
-                              ? (() => {
-                                  const years = Object.keys(
-                                    company.fair_value_assets
-                                  )
-                                    .sort()
-                                    .reverse();
-                                  const latestYear = years[0];
-                                  return (
-                                    <>
-                                      <span>
-                                        {latestYear}:{" "}
-                                        {company.fair_value_assets[latestYear]}
-                                      </span>
-                                      {years.length > 1 && (
-                                        <Button
-                                          size="small"
-                                          onClick={() =>
-                                            handleOpenDetail(company, "assets")
-                                          }
+                            <Box sx={{ minWidth: 100 }}>
+                              {company.fair_value_assets
+                                ? (() => {
+                                    const years = Object.keys(
+                                      company.fair_value_assets
+                                    )
+                                      .sort()
+                                      .reverse();
+                                    const latestYear = years[0];
+                                    return (
+                                      <>
+                                        <Typography 
+                                          variant="body2"
+                                          sx={{ fontSize: { xs: '0.7rem', sm: '0.8rem' } }}
                                         >
-                                          More
-                                        </Button>
-                                      )}
-                                    </>
-                                  );
-                                })()
-                              : "-"}
+                                          {latestYear}:{" "}
+                                          {company.fair_value_assets[latestYear]}
+                                        </Typography>
+                                        {years.length > 1 && (
+                                          <Button
+                                            size="small"
+                                            onClick={() =>
+                                              handleOpenDetail(company, "assets")
+                                            }
+                                            sx={{ fontSize: '0.7rem', p: 0.5 }}
+                                          >
+                                            More
+                                          </Button>
+                                        )}
+                                      </>
+                                    );
+                                  })()
+                                : "-"}
+                            </Box>
                           </TableCell>
 
                           <TableCell>
@@ -907,58 +958,82 @@ const HomePage = () => {
                                   `/company/${company.id}/financial-data`
                                 )
                               }
+                              sx={{ fontSize: { xs: '0.7rem', sm: '0.8rem' } }}
                             >
                               View
                             </Button>
                           </TableCell>
 
-                          <TableCell>
-                            <a
-                              href={company.downloaded_pdfs}
-                              target="_blank"
-                              rel="noreferrer"
-                            >
-                              View PDF
-                            </a>
-                          </TableCell>
+                          {!isSmall && (
+                            <>
+                              <TableCell>
+                                <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
+                                  {company.downloaded_pdfs ? (
+                                    <a
+                                      href={company.downloaded_pdfs}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      style={{ textDecoration: 'none', color: 'primary.main' }}
+                                    >
+                                      View PDF
+                                    </a>
+                                  ) : (
+                                    "-"
+                                  )}
+                                </Typography>
+                              </TableCell>
 
-                          <TableCell>
-                            {company.people_page_link ? (
-                              <a
-                                href={company.people_page_link}
-                                target="_blank"
-                                rel="noreferrer"
-                              >
-                                View People
-                              </a>
-                            ) : (
-                              "-"
-                            )}
-                          </TableCell>
+                              <TableCell>
+                                <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
+                                  {company.people_page_link ? (
+                                    <a
+                                      href={company.people_page_link}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      style={{ textDecoration: 'none', color: 'primary.main' }}
+                                    >
+                                      View People
+                                    </a>
+                                  ) : (
+                                    "-"
+                                  )}
+                                </Typography>
+                              </TableCell>
 
-                          <TableCell>
-                            {company.summary_notes_link ? (
-                              <a
-                                href={company.summary_notes_link}
-                                target="_blank"
-                                rel="noreferrer"
-                              >
-                                View Summary
-                              </a>
-                            ) : (
-                              "-"
-                            )}
-                          </TableCell>
+                              <TableCell>
+                                <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
+                                  {company.summary_notes_link ? (
+                                    <a
+                                      href={company.summary_notes_link}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      style={{ textDecoration: 'none', color: 'primary.main' }}
+                                    >
+                                      View Summary
+                                    </a>
+                                  ) : (
+                                    "-"
+                                  )}
+                                </Typography>
+                              </TableCell>
 
-                          <TableCell>{company.type_of_scheme || "-"}</TableCell>
+                              <TableCell>
+                                <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
+                                  {company.type_of_scheme || "-"}
+                                </Typography>
+                              </TableCell>
 
-                          <TableCell>
-                            {company.last_modified
-                              ? new Date(
-                                  company.last_modified
-                                ).toLocaleDateString()
-                              : "-"}
-                          </TableCell>
+                              <TableCell>
+                                <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
+                                  {company.last_modified
+                                    ? new Date(
+                                        company.last_modified
+                                      ).toLocaleDateString()
+                                    : "-"}
+                                </Typography>
+                              </TableCell>
+                            </>
+                          )}
 
                           <TableCell>
                             <TextField
@@ -972,6 +1047,12 @@ const HomePage = () => {
                                 )
                               }
                               variant="standard"
+                              sx={{
+                                minWidth: 100,
+                                '& .MuiInputBase-input': {
+                                  fontSize: { xs: '0.75rem', sm: '0.875rem' }
+                                }
+                              }}
                             >
                               <MenuItem value={0}>Unapproved</MenuItem>
                               <MenuItem value={1}>Approved</MenuItem>
@@ -985,10 +1066,10 @@ const HomePage = () => {
                                 display: "inline-flex",
                                 alignItems: "center",
                                 justifyContent: "center",
-                                px: 2,
+                                px: { xs: 1, sm: 2 },
                                 py: 0.4,
                                 borderRadius: "12px",
-                                fontSize: "0.75rem",
+                                fontSize: { xs: '0.65rem', sm: '0.75rem' },
                                 fontWeight: 500,
                                 letterSpacing: "0.5px",
                                 textTransform: "capitalize",
@@ -1013,7 +1094,7 @@ const HomePage = () => {
                                     : "rgba(198, 40, 40, 0.3)",
                                 boxShadow: "0 0 0 1px rgba(0,0,0,0.02)",
                                 backdropFilter: "blur(2px)",
-                                minWidth: "80px",
+                                minWidth: { xs: "60px", sm: "80px" },
                                 textAlign: "center",
                               }}
                             >
@@ -1025,13 +1106,21 @@ const HomePage = () => {
                     })}
                   </TableBody>
                 </Table>
+
+                {/* Detail Dialog */}
                 <Dialog
                   open={openDetailDialog}
                   onClose={handleCloseDetailDialog}
                   maxWidth="xs"
                   fullWidth
+                  PaperProps={{
+                    sx: {
+                      mx: { xs: 2, sm: 4 },
+                      width: { xs: 'calc(100% - 32px)', sm: 'auto' }
+                    }
+                  }}
                 >
-                  <DialogTitle>
+                  <DialogTitle sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
                     {detailType === "turnover"
                       ? "Turnover Details"
                       : "Asset Value Details"}
@@ -1051,13 +1140,105 @@ const HomePage = () => {
                             justifyContent="space-between"
                             py={0.5}
                           >
-                            <Typography>{year}</Typography>
-                            <Typography>{value}</Typography>
+                            <Typography sx={{ fontSize: { xs: '0.8rem', sm: '1rem' } }}>
+                              {year}
+                            </Typography>
+                            <Typography sx={{ fontSize: { xs: '0.8rem', sm: '1rem' } }}>
+                              {value}
+                            </Typography>
                           </Box>
                         ))}
                   </DialogContent>
                   <DialogActions>
-                    <Button onClick={handleCloseDetailDialog}>Close</Button>
+                    <Button 
+                      onClick={handleCloseDetailDialog}
+                      size={isSmall ? "small" : "medium"}
+                    >
+                      Close
+                    </Button>
+                  </DialogActions>
+                </Dialog>
+
+                {/* Export Dialog */}
+                <Dialog 
+                  open={exportDialogOpen} 
+                  onClose={closeExportDialog}
+                  PaperProps={{
+                    sx: {
+                      mx: { xs: 2, sm: 4 },
+                      width: { xs: 'calc(100% - 32px)', sm: 'auto' }
+                    }
+                  }}
+                >
+                  <DialogTitle sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
+                    Export Options
+                  </DialogTitle>
+                  <DialogContent>
+                    <FormGroup>
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            size={isSmall ? "small" : "medium"}
+                            checked={includeKeyData}
+                            onChange={(e) =>
+                              setIncludeKeyData(e.target.checked)
+                            }
+                          />
+                        }
+                        label={
+                          <Typography sx={{ fontSize: { xs: '0.8rem', sm: '1rem' } }}>
+                            Include Key Financial Data
+                          </Typography>
+                        }
+                      />
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            size={isSmall ? "small" : "medium"}
+                            checked={includePeopleData}
+                            onChange={(e) =>
+                              setIncludePeopleData(e.target.checked)
+                            }
+                          />
+                        }
+                        label={
+                          <Typography sx={{ fontSize: { xs: '0.8rem', sm: '1rem' } }}>
+                            Include People Data
+                          </Typography>
+                        }
+                      />
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            size={isSmall ? "small" : "medium"}
+                            checked={includeSummaryNotes}
+                            onChange={(e) =>
+                              setIncludeSummaryNotes(e.target.checked)
+                            }
+                          />
+                        }
+                        label={
+                          <Typography sx={{ fontSize: { xs: '0.8rem', sm: '1rem' } }}>
+                            Include Summary Notes
+                          </Typography>
+                        }
+                      />
+                    </FormGroup>
+                  </DialogContent>
+                  <DialogActions>
+                    <Button 
+                      onClick={closeExportDialog}
+                      size={isSmall ? "small" : "medium"}
+                    >
+                      Cancel
+                    </Button>
+                    <Button 
+                      onClick={handleExport} 
+                      variant="contained"
+                      size={isSmall ? "small" : "medium"}
+                    >
+                      Export
+                    </Button>
                   </DialogActions>
                 </Dialog>
               </TableContainer>
@@ -1066,6 +1247,7 @@ const HomePage = () => {
         </Container>
       </Box>
 
+      {/* Profile Menu */}
       <Menu
         anchorEl={profileAnchorEl}
         open={Boolean(profileAnchorEl)}
@@ -1073,7 +1255,11 @@ const HomePage = () => {
         anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
         transformOrigin={{ vertical: "top", horizontal: "right" }}
       >
-        <MenuItem onClick={handleLogout}>Logout</MenuItem>
+        <MenuItem onClick={handleLogout}>
+          <Typography sx={{ fontSize: { xs: '0.8rem', sm: '1rem' } }}>
+            Logout
+          </Typography>
+        </MenuItem>
       </Menu>
     </Box>
   );
