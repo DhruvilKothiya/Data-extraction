@@ -5,6 +5,7 @@ from app.models import user  # Import your models to load metadata
 from app.models.company import CompanyData
 from app.models.csv_file_data import CSVFileData
 from app.models.key_financial_data import KeyFinancialData
+from app.models.people_data import PeopleData
 from app.db.base import Base  # SQLAlchemy Base
 from app.core.config import DATABASE_URL 
 

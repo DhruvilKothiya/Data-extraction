@@ -17,6 +17,7 @@ from app.models.csv_file_data import CSVFileData
 from app.utils.email import send_reset_email
 from passlib.context import CryptContext
 from app.models.company import CompanyData 
+from app.models.people_data import PeopleData
 from app.models.key_financial_data import KeyFinancialData
 from typing import List
 
