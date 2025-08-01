@@ -14,6 +14,7 @@ import PublicRoute from "./Auth/PublicRoute";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import KeyFinancialDataPage from "./pages/KeyFinancialDataPage";
+import PeoplePage from "./pages/PeoplePage";
 
 const theme = createTheme({
   palette: {
@@ -83,6 +84,14 @@ function App() {
             element={
               <PrivateRoute>
                 <KeyFinancialDataPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/company/:id/people"
+            element={
+              <PrivateRoute>
+                <PeoplePage/>
               </PrivateRoute>
             }
           />

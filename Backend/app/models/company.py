@@ -18,3 +18,4 @@ class CompanyData(Base):
     last_modified = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     people_page_link = Column(String(255), nullable=True)
     summary_notes_link = Column(String(255), nullable=True)
+    people = relationship("PeopleData", back_populates="company")

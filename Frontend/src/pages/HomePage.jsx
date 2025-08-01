@@ -73,6 +73,7 @@ const HomePage = () => {
   const [approvalFilter, setApprovalFilter] = useState("all");
   const [dataLoaded, setDataLoaded] = useState(false);
   const [rerunLoading, setRerunLoading] = useState({});
+  
   const registrationTimersRef = useRef({});
 
   const navigate = useNavigate();
@@ -112,6 +113,25 @@ const HomePage = () => {
     setOpenDetailDialog(false);
     setSelectedCompany(null);
     setDetailType("");
+  };
+
+  // Navigate to People Page
+  const handleNavigateToPeoplePage = (company) => {
+    navigate(`/company/${company.id}/people`, { 
+      state: { 
+        companyName: company.company_name,
+        companyId: company.id 
+      } 
+    });
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "-";
+    try {
+      return new Date(dateString).toLocaleDateString();
+    } catch (error) {
+      return dateString;
+    }
   };
 
   const handleExport = async () => {
@@ -984,20 +1004,14 @@ const HomePage = () => {
                               </TableCell>
 
                               <TableCell>
-                                <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
-                                  {company.people_page_link ? (
-                                    <a
-                                      href={company.people_page_link}
-                                      target="_blank"
-                                      rel="noreferrer"
-                                      style={{ textDecoration: 'none', color: 'primary.main' }}
-                                    >
-                                      View People
-                                    </a>
-                                  ) : (
-                                    "-"
-                                  )}
-                                </Typography>
+                                <Button
+                                  size="small"
+                                  variant="outlined"
+                                  onClick={() => handleNavigateToPeoplePage(company)}
+                                  sx={{ fontSize: { xs: '0.7rem', sm: '0.8rem' } }}
+                                >
+                                  View
+                                </Button>
                               </TableCell>
 
                               <TableCell>

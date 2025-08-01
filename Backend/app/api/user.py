@@ -20,9 +20,6 @@ from app.models.company import CompanyData
 from app.models.people_data import PeopleData
 from app.models.key_financial_data import KeyFinancialData
 from typing import List
-
-
-
 import shutil
 
 router = APIRouter()
@@ -75,6 +72,7 @@ def forgot_password(request_data: EmailSchema, request: Request, db: Session = D
 
     return {"msg": "Password reset link sent to your email"}
 
+
 @router.post("/reset-password")
 def reset_password(data: ResetPasswordSchema, db: Session = Depends(get_db)):
     try:
@@ -93,6 +91,7 @@ def reset_password(data: ResetPasswordSchema, db: Session = Depends(get_db)):
     user.password = hashed_password
     db.commit()
     return {"msg": "Password updated successfully"}
+
 
 @router.get("/company-data")
 def get_company_data(db: Session = Depends(get_db)):
@@ -136,6 +135,7 @@ def get_company_data(db: Session = Depends(get_db)):
         }
         for c in companies
     ]
+
 
 @router.post("/upload-file")
 def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
@@ -220,6 +220,7 @@ def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to process file: {str(e)}")
 
+
 @router.post("/reprocess-company/{company_id}")
 def reprocess_company(company_id: int, db: Session = Depends(get_db)):
     company = db.query(CompanyData).filter(CompanyData.id == company_id).first()
@@ -270,6 +271,7 @@ def reprocess_company(company_id: int, db: Session = Depends(get_db)):
 
     db.commit()
     return {"message": f"Company reprocessed with status {company.status}"}
+
 
 @router.get("/key-financial-data/{company_id}")
 def get_key_financial_data(company_id: int, db: Session = Depends(get_db)):
@@ -481,3 +483,24 @@ def update_approval_stage(company_id: int, data: dict = Body(...), db: Session =
         "message": "Approval stage updated",
         "new_status": company.status
     }
+    
+    
+@router.get("/people/{company_id}")
+def get_people_for_company(company_id: int, db: Session = Depends(get_db)):
+    company = db.query(CompanyData).filter(CompanyData.id == company_id).first()
+    if not company:
+        raise HTTPException(status_code=404, detail="Company not found")
+
+    people = db.query(PeopleData).filter(PeopleData.company_id == company_id).all()
+
+    return [
+        {
+            "id": person.id,
+            "name": person.name,
+            "role": person.role, 
+            "appointment_date": person.appointment_date,
+            "date_of_birth": person.date_of_birth,
+            "company_id": person.company_id  
+        }
+        for person in people
+    ]
