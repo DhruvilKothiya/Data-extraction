@@ -288,8 +288,6 @@ def get_key_financial_data(company_id: int, db: Session = Depends(get_db)):
     return key_data
 
 
-
-
 def extract_year_values(json_data, fixed_years):
     """
     Extracts values for fixed years (like 2020, 2019) and determines the latest
@@ -423,17 +421,104 @@ def export_selected_key_financial_data(
 
     # Create DataFrames
     main_df = pd.DataFrame(main_rows)
-    people_df = pd.DataFrame([{"Company Name": c.company_name, "People Data": "[People Placeholder]"} for c in companies]) if include_people else None
+    
+    # Prepare People Data
+    people_df = None
+    if include_people:
+        # Fetch people data for all selected companies
+        people_data = db.query(PeopleData).filter(PeopleData.company_id.in_(ids)).all()
+        
+        people_rows = []
+        for person in people_data:
+            # Get company name for reference
+            company = next((c for c in companies if c.id == person.company_id), None)
+            company_name = company.company_name if company else "Unknown Company"
+            
+            people_rows.append({
+                "Company Name": company_name,
+                "Company ID": person.company_id,
+                "Person Name": person.name or "",
+                "Role/Position": person.role or "",
+                "Appointment Date": person.appointment_date.strftime('%Y-%m-%d') if person.appointment_date else "",
+                "Date of Birth": person.date_of_birth.strftime('%Y-%m-%d') if person.date_of_birth else ""
+            })
+        
+        # Create DataFrame even if no data (will have headers)
+        if people_rows:
+            people_df = pd.DataFrame(people_rows)
+        else:
+            # Create empty DataFrame with proper headers
+            people_df = pd.DataFrame(columns=[
+                "Company Name", 
+                "Company ID", 
+                "Person Name", 
+                "Role/Position", 
+                "Appointment Date", 
+                "Date of Birth"
+            ])
+    
+    # Prepare Summary Notes Data
     summary_df = pd.DataFrame([{"Company Name": c.company_name, "Summary Notes": "[Summary Notes Placeholder]"} for c in companies]) if include_summary else None
-
+    
     # Write to Excel in memory
     output = BytesIO()
     with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
+        # Main data sheet
         main_df.to_excel(writer, sheet_name="Main Data", index=False)
+        
+        # People data sheet (always include if requested, even if empty)
         if people_df is not None:
             people_df.to_excel(writer, sheet_name="People Data", index=False)
+            
+            # Get the workbook and worksheet objects for formatting
+            workbook = writer.book
+            people_worksheet = writer.sheets['People Data']
+            
+            # Add some basic formatting to the people sheet
+            header_format = workbook.add_format({
+                'bold': True,
+                'text_wrap': True,
+                'valign': 'top',
+                'fg_color': '#D7E4BC',
+                'border': 1
+            })
+            
+            # Apply header formatting
+            for col_num, value in enumerate(people_df.columns.values):
+                people_worksheet.write(0, col_num, value, header_format)
+            
+            # Auto-adjust column widths
+            for column in people_df:
+                column_length = max(people_df[column].astype(str).map(len).max(), len(column))
+                col_idx = people_df.columns.get_loc(column)
+                people_worksheet.set_column(col_idx, col_idx, min(column_length + 2, 50))
+        
+        # Summary notes sheet (always include if requested, even if empty)
         if summary_df is not None:
             summary_df.to_excel(writer, sheet_name="Summary Notes", index=False)
+            
+            # Get the workbook and worksheet objects for formatting
+            workbook = writer.book
+            summary_worksheet = writer.sheets['Summary Notes']
+            
+            # Add some basic formatting to the summary sheet
+            header_format = workbook.add_format({
+                'bold': True,
+                'text_wrap': True,
+                'valign': 'top',
+                'fg_color': '#FFE6CC',
+                'border': 1
+            })
+            
+            # Apply header formatting
+            for col_num, value in enumerate(summary_df.columns.values):
+                summary_worksheet.write(0, col_num, value, header_format)
+            
+            # Auto-adjust column widths
+            for column in summary_df:
+                column_length = max(summary_df[column].astype(str).map(len).max(), len(column))
+                col_idx = summary_df.columns.get_loc(column)
+                summary_worksheet.set_column(col_idx, col_idx, min(column_length + 2, 50))
 
     output.seek(0)
     return StreamingResponse(
@@ -441,8 +526,7 @@ def export_selected_key_financial_data(
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": "attachment; filename=exported_companies.xlsx"}
     )
-    
-    
+     
 @router.put("/update-registration-number/{company_id}")
 def update_registration_number(company_id: int, data: dict = Body(...), db: Session = Depends(get_db)):
     new_number = data.get("registration_number")
