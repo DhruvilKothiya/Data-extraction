@@ -52,7 +52,7 @@ const HomePage = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const isTablet = useMediaQuery(theme.breakpoints.down('lg'));
   const isSmall = useMediaQuery(theme.breakpoints.down('sm'));
-  
+
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [profileAnchorEl, setProfileAnchorEl] = useState(null);
@@ -73,7 +73,7 @@ const HomePage = () => {
   const [approvalFilter, setApprovalFilter] = useState("all");
   const [dataLoaded, setDataLoaded] = useState(false);
   const [rerunLoading, setRerunLoading] = useState({});
-  
+
   const registrationTimersRef = useRef({});
 
   const navigate = useNavigate();
@@ -117,8 +117,8 @@ const HomePage = () => {
 
   // Navigate to People Page
   const handleNavigateToPeoplePage = (company) => {
-    navigate(`/company/${company.id}/people`, { 
-      state: { 
+    navigate(`/company/${company.id}/people`, {
+      state: {
         companyName: company.company_name,
         companyId: company.id 
       } 
@@ -518,8 +518,8 @@ const HomePage = () => {
                 <MenuIcon />
               </IconButton>
             )}
-            <Typography 
-              variant={isSmall ? "h6" : "h5"} 
+            <Typography
+              variant={isSmall ? "h6" : "h5"}
               sx={{ fontWeight: "bold" }}
             >
               Company
@@ -580,8 +580,8 @@ const HomePage = () => {
                   <Box sx={{ display: "flex", justifyContent: "center" }}>
                     <UploadIcon sx={{ fontSize: { xs: 30, sm: 40 }, mb: 1 }} />
                   </Box>
-                  <Button 
-                    variant="outlined" 
+                  <Button
+                    variant="outlined"
                     component="span"
                     size={isSmall ? "small" : "medium"}
                   >
@@ -650,19 +650,19 @@ const HomePage = () => {
                       </InputAdornment>
                     ),
                   }}
-                  sx={{ 
+                  sx={{
                     width: { xs: '100%', sm: 300 },
                     order: { xs: 1, sm: 1 }
                   }}
                 />
-                
+
                 <TextField
                   select
                   label="Filter by Approval"
                   size="small"
                   value={approvalFilter}
                   onChange={(e) => setApprovalFilter(e.target.value)}
-                  sx={{ 
+                  sx={{
                     width: { xs: '100%', sm: 200 },
                     order: { xs: 2, sm: 2 }
                   }}
@@ -672,10 +672,10 @@ const HomePage = () => {
                   <MenuItem value="unapproved">Unapproved</MenuItem>
                 </TextField>
 
-                <Stack 
-                  direction="row" 
+                <Stack
+                  direction="row"
                   spacing={1}
-                  sx={{ 
+                  sx={{
                     order: { xs: 3, sm: 3 },
                     justifyContent: { xs: 'center', sm: 'flex-end' }
                   }}
@@ -695,8 +695,8 @@ const HomePage = () => {
               </Stack>
 
               {/* Table Section */}
-              <TableContainer 
-                component={Paper} 
+              <TableContainer
+                component={Paper}
                 elevation={0}
                 sx={{
                   overflowX: 'auto',
@@ -795,17 +795,17 @@ const HomePage = () => {
                   </TableHead>
                   <TableBody>
                     {paginatedCompanies.map((company) => {
-                      const isRejectedOrUnapproved =
-                        company.approval_stage === 0 ||
-                        company.approval_stage === 2;
+                      // const isRejectedOrUnapproved =
+                      //   company.approval_stage === 0 ||
+                      //   company.approval_stage === 2;
                       const currentRegistrationValue =
                         editedRegistrations[company.id] ??
                         company.registration_number ??
                         "";
-                      const hasRegistrationChanged =
-                        editedRegistrations[company.id] !== undefined &&
-                        editedRegistrations[company.id] !==
-                          company.registration_number;
+                      // const hasRegistrationChanged =
+                      //   editedRegistrations[company.id] !== undefined &&
+                      //   editedRegistrations[company.id] !==
+                      //     company.registration_number;
 
                       return (
                         <TableRow key={company.id}>
@@ -818,9 +818,9 @@ const HomePage = () => {
                           </TableCell>
 
                           <TableCell>
-                            <Typography 
-                              variant="body2" 
-                              sx={{ 
+                            <Typography
+                              variant="body2"
+                              sx={{
                                 fontSize: { xs: '0.75rem', sm: '0.875rem' },
                                 wordBreak: 'break-word'
                               }}
@@ -835,7 +835,7 @@ const HomePage = () => {
                                 display: "flex",
                                 alignItems: "center",
                                 gap: 1,
-                                minWidth: 120
+                                minWidth: 120,
                               }}
                             >
                               <TextField
@@ -848,32 +848,31 @@ const HomePage = () => {
                                   )
                                 }
                                 variant="standard"
-                                disabled={
-                                  !isRejectedOrUnapproved &&
-                                  !hasRegistrationChanged
-                                }
+                                disabled={company.approval_stage === 1} // Disabled when approved
+                                InputProps={{
+                                  readOnly: company.approval_stage === 1, // Read-only when approved
+                                }}
                                 sx={{
-                                  '& .MuiInputBase-input': {
-                                    fontSize: { xs: '0.75rem', sm: '0.875rem' }
-                                  }
+                                  "& .MuiInputBase-input": {
+                                    fontSize: { xs: "0.75rem", sm: "0.875rem" },
+                                    color: "text.primary",
+                                    fontWeight:
+                                      company.approval_stage === 1
+                                        ? "bold"
+                                        : "normal", // Bold when approved
+                                  },
+                                  // Style adjustments for read-only state
+                                  "& .MuiInput-root:before": {
+                                    borderBottom:
+                                      company.approval_stage === 1
+                                        ? "none"
+                                        : "inherit",
+                                  },
+                                  "& .Mui-disabled": {
+                                    "-webkit-text-fill-color": "inherit", // Keep text color consistent
+                                  },
                                 }}
                               />
-                              {!isRejectedOrUnapproved &&
-                                hasRegistrationChanged && (
-                                  <Button
-                                    variant="outlined"
-                                    size="small"
-                                    onClick={() =>
-                                      handleRegistrationUpdate(
-                                        company.id,
-                                        editedRegistrations[company.id]
-                                      )
-                                    }
-                                    sx={{ fontSize: '0.75rem' }}
-                                  >
-                                    Save
-                                  </Button>
-                                )}
                             </Box>
                           </TableCell>
 
@@ -904,7 +903,7 @@ const HomePage = () => {
                                     const latestYear = years[0];
                                     return (
                                       <>
-                                        <Typography 
+                                        <Typography
                                           variant="body2"
                                           sx={{ fontSize: { xs: '0.7rem', sm: '0.8rem' } }}
                                         >
@@ -944,7 +943,7 @@ const HomePage = () => {
                                     const latestYear = years[0];
                                     return (
                                       <>
-                                        <Typography 
+                                        <Typography
                                           variant="body2"
                                           sx={{ fontSize: { xs: '0.7rem', sm: '0.8rem' } }}
                                         >
@@ -1050,28 +1049,43 @@ const HomePage = () => {
                           )}
 
                           <TableCell>
-                            <TextField
-                              select
-                              size="small"
-                              value={company.approval_stage}
-                              onChange={(e) =>
-                                handleApprovalChange(
-                                  company.id,
-                                  parseInt(e.target.value)
-                                )
-                              }
-                              variant="standard"
-                              sx={{
-                                minWidth: 100,
+                            {company.status === "Done" ? (
+                              <TextField
+                                select
+                                size="small"
+                                value={company.approval_stage}
+                                onChange={(e) =>
+                                  handleApprovalChange(
+                                    company.id,
+                                    parseInt(e.target.value)
+                                  )
+                                }
+                                variant="standard"
+                                sx={{
+                                  minWidth: 100,
                                 '& .MuiInputBase-input': {
                                   fontSize: { xs: '0.75rem', sm: '0.875rem' }
                                 }
-                              }}
-                            >
-                              <MenuItem value={0}>Unapproved</MenuItem>
-                              <MenuItem value={1}>Approved</MenuItem>
-                              <MenuItem value={2}>Rejected</MenuItem>
-                            </TextField>
+                                }}
+                              >
+                                <MenuItem value={0}>Unapproved</MenuItem>
+                                <MenuItem value={1}>Approved</MenuItem>
+                                <MenuItem value={2}>Rejected</MenuItem>
+                              </TextField>
+                            ) : (
+                              <Typography
+                                variant="body2"
+                                sx={{
+                                  fontSize: { xs: "0.7rem", sm: "0.8rem" },
+                                  color: "text.secondary",
+                                  fontStyle: "italic",
+                                }}
+                              >
+                                {company.status === "Processing"
+                                  ? "Processing..."
+                                  : "Not started"}
+                              </Typography>
+                            )}
                           </TableCell>
 
                           <TableCell>
@@ -1164,7 +1178,7 @@ const HomePage = () => {
                         ))}
                   </DialogContent>
                   <DialogActions>
-                    <Button 
+                    <Button
                       onClick={handleCloseDetailDialog}
                       size={isSmall ? "small" : "medium"}
                     >
@@ -1174,8 +1188,8 @@ const HomePage = () => {
                 </Dialog>
 
                 {/* Export Dialog */}
-                <Dialog 
-                  open={exportDialogOpen} 
+                <Dialog
+                  open={exportDialogOpen}
                   onClose={closeExportDialog}
                   PaperProps={{
                     sx: {
@@ -1240,14 +1254,14 @@ const HomePage = () => {
                     </FormGroup>
                   </DialogContent>
                   <DialogActions>
-                    <Button 
+                    <Button
                       onClick={closeExportDialog}
                       size={isSmall ? "small" : "medium"}
                     >
                       Cancel
                     </Button>
-                    <Button 
-                      onClick={handleExport} 
+                    <Button
+                      onClick={handleExport}
                       variant="contained"
                       size={isSmall ? "small" : "medium"}
                     >
