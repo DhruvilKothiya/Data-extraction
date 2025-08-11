@@ -11,7 +11,6 @@ class CompanyData(Base):
     rating = Column(Integer)
     key_financial_data_id = Column(Integer, ForeignKey("key_financial_data.id"))
     key_financial_data = relationship("KeyFinancialData", backref="company")
-    downloaded_pdfs = Column(Text)
     approval_stage = Column(Integer, default=0)
     status = Column(String(20), default="Not Started")
     type_of_scheme = Column(String(100), nullable=True)
