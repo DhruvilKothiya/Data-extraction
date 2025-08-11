@@ -131,7 +131,7 @@ def get_company_data(db: Session = Depends(get_db)):
                 if c.key_financial_data_id in key_data_map else {},
             "people_page_link": c.people_page_link or f"/people/{c.id}",
             "summary_notes_link": c.summary_notes_link or f"/summary-notes/{c.id}",
-            "pdf_link": f"/view-pdfs/{c.id}"
+            # "pdf_link": f"/view-pdfs/{c.id}"
         }
         for c in companies
     ]
@@ -149,6 +149,11 @@ def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
 
         for row in csv_reader:
             company_name = row.get("Company")
+            if not company_name:
+                continue
+
+            company_name = company_name.replace("Ltd.", "Limited").replace("Ltd", "Limited")
+
             address_parts = [
                 row.get("Address1"),
                 row.get("Address2"),
@@ -156,70 +161,62 @@ def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
                 row.get("City"),
                 row.get("County")
             ]
-
-            # Remove None or empty values and join with commas
             full_address = ", ".join([part for part in address_parts if part])
 
-            if not company_name:
-                continue
-
-            # Step 1: Save in csv_file_data
-            csv_record = CSVFileData(
-                company_name=company_name,
-                address1=row.get("Address1"),
-                address2=row.get("Address2"),
-                address3=row.get("Address3"),
-                city=row.get("City"),
-                county=row.get("County"),
-            )
-            db.add(csv_record)
-
-            # Step 2: Create/Update KeyFinancialData
-            key_data = db.query(KeyFinancialData).filter(KeyFinancialData.company_name == company_name).first()
-            if not key_data:
-                key_data = KeyFinancialData(company_name=company_name)
-                db.add(key_data)
-                db.flush()  # Get the ID immediately
-
-            # Step 3: Create/Update CompanyData
-            company_data = db.query(CompanyData).filter(CompanyData.company_name == company_name).first()
-            if not company_data:
-                company_data = CompanyData(
-                    company_name=company_name,
-                    key_financial_data_id=key_data.id,
-                    status="Processing"
-                )
-                db.add(company_data)
-            else:
-                company_data.status = "Processing"
-
-            
             try:
                 api_response = requests.post(
-                    "http://192.168.29.160:8000/process-company",
+                    "https://d6fe94ecd6e9.ngrok-free.app/process-company",
                     json={
                         "company": company_name,
                         "address": full_address
                     }
                 )
-                print(api_response.status_code)
-                print(api_response.json())
+                print(api_response.status_code, api_response.json())
 
                 if api_response.status_code == 200:
-                    company_data.status = "Done"
+                    csv_record = CSVFileData(
+                        company_name=company_name,
+                        address1=row.get("Address1"),
+                        address2=row.get("Address2"),
+                        address3=row.get("Address3"),
+                        city=row.get("City"),
+                        county=row.get("County"),
+                    )
+                    db.add(csv_record)
+
+                    key_data = db.query(KeyFinancialData).filter(
+                        KeyFinancialData.company_name == company_name
+                    ).first()
+                    if not key_data:
+                        key_data = KeyFinancialData(company_name=company_name)
+                        db.add(key_data)
+                        db.flush()
+
+                    company_data = db.query(CompanyData).filter(
+                        CompanyData.company_name == company_name
+                    ).first()
+                    if not company_data:
+                        company_data = CompanyData(
+                            company_name=company_name,
+                            key_financial_data_id=key_data.id,
+                            status="Done"
+                        )
+                        db.add(company_data)
+                    else:
+                        company_data.status = "Done"
+
+                    db.commit()  # commit after each successful company
+
                 else:
                     print(f"API failed for {company_name}: {api_response.status_code}")
+
             except Exception as e:
                 print(f"Error fetching API data for {company_name}: {e}")
-                if company_data:
-                    company_data.status = "Not Started"
 
-        db.commit()
-        return {"message": "File processed, companies updated, API hit, but mapping skipped."}
+        return {"message": "File processed. Companies saved only when API returned 200."}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to process file: {str(e)}")
-
 
 @router.post("/reprocess-company/{company_id}")
 def reprocess_company(company_id: int, db: Session = Depends(get_db)):

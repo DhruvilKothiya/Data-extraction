@@ -8,8 +8,9 @@ class KeyFinancialData(Base):
     company_name = Column(String(255), nullable=True)
     company_status = Column(String(50), nullable=True)
     company_registered_number = Column(String(50), nullable=True) 
-    incorporation_date = Column(Date, nullable=True)
-    latest_accounts_date = Column(Date, nullable=True)
+    incorporation_date = Column(String(50), nullable=True)
+    latest_accounts_date = Column(String(50), nullable=True)
+
     
     turnover_data = Column(JSON, nullable=True)
     profit_data = Column(JSON, nullable=True)
