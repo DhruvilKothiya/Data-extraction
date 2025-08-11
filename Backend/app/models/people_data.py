@@ -7,9 +7,12 @@ class PeopleData(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(255), nullable=False)
-    role = Column(String(255))
-    appointment_date = Column(Date)
-    date_of_birth = Column(Date)
+    role = Column(String(255), nullable=True)
+    appointment_date = Column(String(50),nullable=True)  # or String(255) if you want more room
+    date_of_birth = Column(String(50),nullable=True)
+    company_registered_number = Column(String(50), nullable=True)
+
+
 
     company_id = Column(Integer, ForeignKey("company_data.id"), nullable=False)
     company = relationship("CompanyData", back_populates="people")
