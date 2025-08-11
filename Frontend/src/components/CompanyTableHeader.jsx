@@ -1,0 +1,104 @@
+// components/CompanyTableHeader.jsx
+import React from 'react';
+import { 
+  TableHead, 
+  TableRow, 
+  TableCell, 
+  Checkbox, 
+  IconButton,
+  Box,
+  Menu,
+  MenuItem
+} from '@mui/material';
+import { ArrowDropDown as ArrowDropDownIcon } from '@mui/icons-material';
+
+const CompanyTableHeader = ({
+  filteredCompanies,
+  isSmall,
+  selectAllChecked,
+  selectAllIndeterminate,
+  onSelectAllChange,
+  menuAnchorEl,
+  onMenuClick,
+  onMenuClose,
+  onCustomSelect,
+  isMenuOpen
+}) => {
+  return (
+    <TableHead>
+      <TableRow>
+        <TableCell padding="checkbox">
+          <Box sx={{ display: "flex", alignItems: "center" }}>
+            <Checkbox
+              size={isSmall ? "small" : "medium"}
+              checked={selectAllChecked}
+              indeterminate={selectAllIndeterminate}
+              onChange={(e) => onSelectAllChange(e.target.checked)}
+            />
+
+            <IconButton
+              size="small"
+              onClick={onMenuClick}
+              aria-label="More filter options"
+            >
+              <ArrowDropDownIcon />
+            </IconButton>
+          </Box>
+
+          <Menu
+            anchorEl={menuAnchorEl}
+            open={isMenuOpen}
+            onClose={onMenuClose}
+            anchorOrigin={{
+              vertical: "bottom",
+              horizontal: "left",
+            }}
+            transformOrigin={{
+              vertical: "top",
+              horizontal: "left",
+            }}
+          >
+            <MenuItem onClick={() => onCustomSelect("all")}>
+              Select All
+            </MenuItem>
+            <MenuItem onClick={() => onCustomSelect("approved")}>
+              Select Reviewed & Approved
+            </MenuItem>
+            <MenuItem onClick={() => onCustomSelect("unapproved")}>
+              Select Unapproved / Rejected
+            </MenuItem>
+            <MenuItem onClick={() => onCustomSelect("Not Started")}>
+              Select Not Started
+            </MenuItem>
+            <MenuItem onClick={() => onCustomSelect("Processing")}>
+              Select Processing
+            </MenuItem>
+            <MenuItem onClick={() => onCustomSelect("Done")}>
+              Select Done
+            </MenuItem>
+          </Menu>
+        </TableCell>
+
+        <TableCell>Company Name</TableCell>
+        <TableCell>Registration Number</TableCell>
+        <TableCell>Re-run AI</TableCell>
+        <TableCell>Turnover</TableCell>
+        <TableCell>Asset Value</TableCell>
+        <TableCell>Key Financial Data</TableCell>
+        {!isSmall && (
+          <>
+            {/* <TableCell>PDFs</TableCell> */}
+            <TableCell>People Page</TableCell>
+            <TableCell>Summary Notes</TableCell>
+            <TableCell>Scheme Type</TableCell>
+            <TableCell>Last Modified</TableCell>
+          </>
+        )}
+        <TableCell>Approval Stage</TableCell>
+        <TableCell>Status</TableCell>
+      </TableRow>
+    </TableHead>
+  );
+};
+
+export default CompanyTableHeader;
