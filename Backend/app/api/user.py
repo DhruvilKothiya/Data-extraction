@@ -427,23 +427,43 @@ def export_selected_key_financial_data(
     # Prepare People Data
     people_df = None
     if include_people:
-        # Fetch people data for all selected companies
-        people_data = db.query(PeopleData).filter(PeopleData.company_id.in_(ids)).all()
-        
+        # 1. Get registered numbers for selected companies from KeyFinancialData
+        registered_numbers = (
+            db.query(KeyFinancialData.company_registered_number)
+            .filter(KeyFinancialData.id.in_([c.id for c in companies]))
+            .filter(KeyFinancialData.company_registered_number.isnot(None))
+            .all()
+        )
+        registered_numbers = [rn[0] for rn in registered_numbers]
+
+        # 2. Fetch people data by matching on registered number
+        people_data = (
+            db.query(PeopleData)
+            .filter(PeopleData.company_registered_number.in_(registered_numbers))
+            .all()
+        )
+
+        # 3. Map registered numbers to company names
+        company_map = {
+            kfd.company_registered_number: kfd.company_name
+            for kfd in db.query(KeyFinancialData)
+            .filter(KeyFinancialData.company_registered_number.in_(registered_numbers))
+            .all()
+        }
+
+        # 4. Build export rows
         people_rows = []
         for person in people_data:
-            # Get company name for reference
-            company = next((c for c in companies if c.id == person.company_id), None)
-            company_name = company.company_name if company else "Unknown Company"
-            
+            company_name = company_map.get(person.company_registered_number, "Unknown Company")
             people_rows.append({
                 "Company Name": company_name,
-                "Company ID": person.company_id,
                 "Person Name": person.name or "",
                 "Role/Position": person.role or "",
-                "Appointment Date": person.appointment_date.strftime('%Y-%m-%d') if person.appointment_date else "",
-                "Date of Birth": person.date_of_birth.strftime('%Y-%m-%d') if person.date_of_birth else ""
+                "Appointment Date": person.appointment_date,
+                "Date of Birth": person.date_of_birth
             })
+
+
         
         # Create DataFrame even if no data (will have headers)
         if people_rows:
