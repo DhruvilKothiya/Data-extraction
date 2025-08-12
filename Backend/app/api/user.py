@@ -225,31 +225,39 @@ def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
 
 @router.post("/reprocess-company/{company_id}")
 def reprocess_company(company_id: int, db: Session = Depends(get_db)):
-    company = db.query(CompanyData).filter(CompanyData.id == company_id).first()
+    # 1. Get the company instance
 
     if not company:
         raise HTTPException(status_code=404, detail="Company not found")
 
+    
+    key_data = db.query(KeyFinancialData).filter(
+        KeyFinancialData.id == company.key_financial_data_id
+    ).first()
+
+    if not key_data:
+        raise HTTPException(status_code=404, detail="Key financial data not found for this company")
+
+    registration_number = key_data.company_registered_number or ""
+    if not registration_number:
+        raise HTTPException(status_code=400, detail="Registration number not found")
+   
+    # 3. Set status to Processing before starting
     company.status = "Processing"
     db.commit()
 
     try:
-        registration_number = (company.key_financial_data.company_registered_number if company.key_financial_data else "")
-
-        
+        # 4. Call the external AI processing service
         api_response = requests.post(
-            "http://192.168.29.160:8000/process-company",
+            "https://03cc2a648b4e.ngrok-free.app/process_company_by_reg_number",
             json={"registration_number": registration_number}
         )
-
+        print(f"API response for {company.company_name}: {api_response.status_code}")
         if api_response.status_code == 200:
             ml_data = api_response.json()
-            
-            key_data = db.query(KeyFinancialData).filter(
-                KeyFinancialData.id == company.key_financial_data_id
-            ).first()
-
-            if key_data and ml_data:
+           
+            # Update only if data is returned
+            if ml_data:
                 if 'turnover_data' in ml_data:
                     key_data.turnover_data = ml_data['turnover_data']
                 if 'fair_value_assets' in ml_data:
