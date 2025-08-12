@@ -80,6 +80,7 @@ const CompanyTableHeader = ({
         </TableCell>
 
         <TableCell>Company Name</TableCell>
+        <TableCell>Company Status</TableCell>
         <TableCell>Registration Number</TableCell>
         <TableCell>Re-run AI</TableCell>
         <TableCell>Turnover</TableCell>

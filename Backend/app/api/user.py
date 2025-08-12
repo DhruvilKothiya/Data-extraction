@@ -112,29 +112,34 @@ def get_company_data(db: Session = Depends(get_db)):
             return None
 
     return [
-        {
-            "id": c.id,
-            "company_name": c.company_name,
-            "registration_number": key_data_map[c.key_financial_data_id].company_registered_number
-                if c.key_financial_data_id in key_data_map else None,
-            "approval_stage": c.approval_stage,
-            "status": c.status,
-            "type_of_scheme": c.type_of_scheme,
-            "last_modified": c.last_modified,
-            "turnover_latest": extract_latest(key_data_map[c.key_financial_data_id].turnover_data)
-                if c.key_financial_data_id in key_data_map else None,
-            "assets_fair_value_latest": extract_latest(key_data_map[c.key_financial_data_id].fair_value_assets)
-                if c.key_financial_data_id in key_data_map else None,
-            "turnover_data": key_data_map[c.key_financial_data_id].turnover_data
-                if c.key_financial_data_id in key_data_map else {},
-            "fair_value_assets": key_data_map[c.key_financial_data_id].fair_value_assets
-                if c.key_financial_data_id in key_data_map else {},
-            "people_page_link": c.people_page_link or f"/people/{c.id}",
-            "summary_notes_link": c.summary_notes_link or f"/summary-notes/{c.id}",
-            # "pdf_link": f"/view-pdfs/{c.id}"
-        }
-        for c in companies
-    ]
+    {
+        "id": c.id,
+        "company_name": c.company_name,
+        "registration_number": key_data_map[c.key_financial_data_id].company_registered_number
+            if c.key_financial_data_id in key_data_map else None,
+        "company_status": (
+            "Active"
+            if c.key_financial_data_id in key_data_map
+            and key_data_map[c.key_financial_data_id].company_registered_number
+            else "Inactive"
+        ),
+        "approval_stage": c.approval_stage,
+        "status": c.status,
+        "type_of_scheme": c.type_of_scheme,
+        "last_modified": c.last_modified,
+        "turnover_latest": extract_latest(key_data_map[c.key_financial_data_id].turnover_data)
+            if c.key_financial_data_id in key_data_map else None,
+        "assets_fair_value_latest": extract_latest(key_data_map[c.key_financial_data_id].fair_value_assets)
+            if c.key_financial_data_id in key_data_map else None,
+        "turnover_data": key_data_map[c.key_financial_data_id].turnover_data
+            if c.key_financial_data_id in key_data_map else {},
+        "fair_value_assets": key_data_map[c.key_financial_data_id].fair_value_assets
+            if c.key_financial_data_id in key_data_map else {},
+        "people_page_link": c.people_page_link or f"/people/{c.id}",
+        "summary_notes_link": c.summary_notes_link or f"/summary-notes/{c.id}",
+    }
+    for c in companies
+]
 
 
 @router.post("/upload-file")

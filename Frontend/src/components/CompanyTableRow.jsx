@@ -1,18 +1,18 @@
 // components/CompanyTableRow.jsx
-import React from 'react';
-import { 
-  TableRow, 
-  TableCell, 
-  Checkbox, 
-  Typography, 
-  Box, 
+import React from "react";
+import {
+  TableRow,
+  TableCell,
+  Checkbox,
+  Typography,
+  Box,
   TextField,
   IconButton,
   CircularProgress,
   Button,
-  MenuItem
-} from '@mui/material';
-import { Refresh as RefreshIcon } from '@mui/icons-material';
+  MenuItem,
+} from "@mui/material";
+import { Refresh as RefreshIcon } from "@mui/icons-material";
 
 const CompanyTableRow = ({
   company,
@@ -24,28 +24,40 @@ const CompanyTableRow = ({
   onRerunAI,
   onOpenDetail,
   onNavigate,
-  onApprovalChange
+  onApprovalChange,
 }) => {
   const currentRegistrationValue =
     editedRegistrations[company.id] ?? company.registration_number ?? "";
 
   const formatYearData = (data, type) => {
     if (!data) return "-";
-    const years = Object.keys(data).sort().reverse();
-    const latestYear = years[0];
+
+    // Filter out years with 0 or null
+    const validYears = Object.keys(data)
+      .filter((year) => {
+        const value = data[year];
+        return value !== null && value !== 0;
+      })
+      .sort()
+      .reverse();
+
+    if (validYears.length === 0) return "-";
+
+    const latestYear = validYears[0];
+
     return (
       <>
         <Typography
           variant="body2"
-          sx={{ fontSize: { xs: '0.7rem', sm: '0.8rem' } }}
+          sx={{ fontSize: { xs: "0.7rem", sm: "0.8rem" } }}
         >
           {latestYear}: {data[latestYear]}
         </Typography>
-        {years.length > 1 && (
+        {validYears.length > 1 && (
           <Button
             size="small"
             onClick={() => onOpenDetail(company, type)}
-            sx={{ fontSize: '0.7rem', p: 0.5 }}
+            sx={{ fontSize: "0.7rem", p: 0.5 }}
           >
             More
           </Button>
@@ -61,7 +73,7 @@ const CompanyTableRow = ({
     px: { xs: 1, sm: 2 },
     py: 0.4,
     borderRadius: "12px",
-    fontSize: { xs: '0.65rem', sm: '0.75rem' },
+    fontSize: { xs: "0.65rem", sm: "0.75rem" },
     fontWeight: 500,
     letterSpacing: "0.5px",
     textTransform: "capitalize",
@@ -97,6 +109,7 @@ const CompanyTableRow = ({
           size={isSmall ? "small" : "medium"}
           checked={company.selected}
           onChange={() => onSelect(company.id)}
+          disabled={company.company_status === "Inactive"} // Disable if inactive
         />
       </TableCell>
 
@@ -104,16 +117,30 @@ const CompanyTableRow = ({
         <Typography
           variant="body2"
           sx={{
-            fontSize: { xs: '0.75rem', sm: '0.875rem' },
-            wordBreak: 'break-word'
+            fontSize: { xs: "0.75rem", sm: "0.875rem" },
+            wordBreak: "break-word",
           }}
         >
           {company.company_name}
         </Typography>
       </TableCell>
+      <TableCell>
+        <Typography
+          variant="body2"
+          sx={{
+            fontSize: { xs: "0.75rem", sm: "0.875rem" },
+            color: company.company_status === "Active" ? "green" : "red",
+            fontWeight: "bold",
+          }}
+        >
+          {company.company_status}
+        </Typography>
+      </TableCell>
 
       <TableCell>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1, minWidth: 120 }}>
+        <Box
+          sx={{ display: "flex", alignItems: "center", gap: 1, minWidth: 120 }}
+        >
           <TextField
             size="small"
             value={currentRegistrationValue}
@@ -150,7 +177,7 @@ const CompanyTableRow = ({
           {rerunLoading[company.id] ? (
             <CircularProgress size={isSmall ? 15 : 20} />
           ) : (
-            <RefreshIcon sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }} />
+            <RefreshIcon sx={{ fontSize: { xs: "1rem", sm: "1.25rem" } }} />
           )}
         </IconButton>
       </TableCell>
@@ -172,7 +199,7 @@ const CompanyTableRow = ({
           size="small"
           variant="outlined"
           onClick={() => onNavigate(`/company/${company.id}/financial-data`)}
-          sx={{ fontSize: { xs: '0.7rem', sm: '0.8rem' } }}
+          sx={{ fontSize: { xs: "0.7rem", sm: "0.8rem" } }}
         >
           View
         </Button>
@@ -180,7 +207,7 @@ const CompanyTableRow = ({
 
       {!isSmall && (
         <>
-            {/* <TableCell>
+          {/* <TableCell>
               <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
                 {company.downloaded_pdfs ? (
                   <a
@@ -201,26 +228,28 @@ const CompanyTableRow = ({
             <Button
               size="small"
               variant="outlined"
-              onClick={() => onNavigate(`/company/${company.id}/people`, {
-                state: {
-                  companyName: company.company_name,
-                  companyId: company.id 
-                }
-              })}
-              sx={{ fontSize: { xs: '0.7rem', sm: '0.8rem' } }}
+              onClick={() =>
+                onNavigate(`/company/${company.id}/people`, {
+                  state: {
+                    companyName: company.company_name,
+                    companyId: company.id,
+                  },
+                })
+              }
+              sx={{ fontSize: { xs: "0.7rem", sm: "0.8rem" } }}
             >
               View
             </Button>
           </TableCell>
 
           <TableCell>
-            <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
+            <Typography variant="body2" sx={{ fontSize: "0.8rem" }}>
               {company.summary_notes_link ? (
                 <a
                   href={company.summary_notes_link}
                   target="_blank"
                   rel="noreferrer"
-                  style={{ textDecoration: 'none', color: 'primary.main' }}
+                  style={{ textDecoration: "none", color: "primary.main" }}
                 >
                   View Summary
                 </a>
@@ -231,13 +260,13 @@ const CompanyTableRow = ({
           </TableCell>
 
           <TableCell>
-            <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
+            <Typography variant="body2" sx={{ fontSize: "0.8rem" }}>
               {company.type_of_scheme || "-"}
             </Typography>
           </TableCell>
 
           <TableCell>
-            <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
+            <Typography variant="body2" sx={{ fontSize: "0.8rem" }}>
               {company.last_modified
                 ? new Date(company.last_modified).toLocaleDateString()
                 : "-"}
@@ -252,13 +281,15 @@ const CompanyTableRow = ({
             select
             size="small"
             value={company.approval_stage}
-            onChange={(e) => onApprovalChange(company.id, parseInt(e.target.value))}
+            onChange={(e) =>
+              onApprovalChange(company.id, parseInt(e.target.value))
+            }
             variant="standard"
             sx={{
               minWidth: 100,
-              '& .MuiInputBase-input': {
-                fontSize: { xs: '0.75rem', sm: '0.875rem' }
-              }
+              "& .MuiInputBase-input": {
+                fontSize: { xs: "0.75rem", sm: "0.875rem" },
+              },
             }}
           >
             <MenuItem value={0}>Unapproved</MenuItem>
@@ -280,9 +311,7 @@ const CompanyTableRow = ({
       </TableCell>
 
       <TableCell>
-        <Box sx={getStatusStyles(company.status)}>
-          {company.status}
-        </Box>
+        <Box sx={getStatusStyles(company.status)}>{company.status}</Box>
       </TableCell>
     </TableRow>
   );
