@@ -14,5 +14,4 @@ class PeopleData(Base):
 
 
 
-    company_id = Column(Integer, ForeignKey("company_data.id"), nullable=False)
-    company = relationship("CompanyData", back_populates="people")
+   
