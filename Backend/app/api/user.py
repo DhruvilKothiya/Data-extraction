@@ -568,20 +568,35 @@ def update_approval_stage(company_id: int, data: dict = Body(...), db: Session =
     
 @router.get("/people/{company_id}")
 def get_people_for_company(company_id: int, db: Session = Depends(get_db)):
-    company = db.query(CompanyData).filter(CompanyData.id == company_id).first()
-    if not company:
+    # First, get the company's registered number from KeyFinancialData
+    company_financial = (
+        db.query(KeyFinancialData)
+        .filter(KeyFinancialData.id == company_id)
+        .first()
+    )
+    if not company_financial:
         raise HTTPException(status_code=404, detail="Company not found")
 
-    people = db.query(PeopleData).filter(PeopleData.company_id == company_id).all()
+    # Find people whose registered number matches
+    people = (
+        db.query(PeopleData)
+        .filter(
+            PeopleData.company_registered_number == company_financial.company_registered_number
+        )
+        .all()
+    )
+
+    if not people:
+        return []
 
     return [
         {
             "id": person.id,
             "name": person.name,
-            "role": person.role, 
+            "role": person.role,
             "appointment_date": person.appointment_date,
             "date_of_birth": person.date_of_birth,
-            "company_id": person.company_id  
+            "company_registered_number": person.company_registered_number
         }
         for person in people
     ]
