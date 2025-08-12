@@ -151,13 +151,19 @@ export const useCompanyData = () => {
 
   const toggleSelectAll = (filteredCompanies, checked) => {
     setCompanyData((prevData) =>
-      prevData.map((company) =>
-        filteredCompanies.some((c) => c.id === company.id)
-          ? { ...company, selected: checked }
-          : company
-      )
+      prevData.map((company) => {
+        // Only change selection for active companies
+        if (
+          filteredCompanies.some((c) => c.id === company.id) &&
+          company.company_status === "Active"
+        ) {
+          return { ...company, selected: checked };
+        }
+        return company;
+      })
     );
   };
+
 
   const toggleSelectOne = (id) => {
     setCompanyData((prev) =>

@@ -29,12 +29,16 @@ const CompanyTable = ({
   onCustomSelect,
   isMenuOpen
 }) => {
-  const selectAllChecked = filteredCompanies.length > 0 && filteredCompanies.every(c => c.selected);
-  const selectAllIndeterminate = filteredCompanies.some(c => c.selected) && !filteredCompanies.every(c => c.selected);
+  // Only consider active companies for select-all states
+  const activeFilteredCompanies = filteredCompanies.filter(c => c.company_status === "Active");
+
+  const selectAllChecked = activeFilteredCompanies.length > 0 && activeFilteredCompanies.every(c => c.selected);
+  const selectAllIndeterminate = activeFilteredCompanies.some(c => c.selected) && !activeFilteredCompanies.every(c => c.selected);
 
   const handleSelectAllChange = (checked) => {
-    onSelectAll(filteredCompanies, checked);
+    onSelectAll(activeFilteredCompanies, checked); 
   };
+
 
   const handleCustomSelectWithData = (option) => {
     onCustomSelect(option, paginatedCompanies);
