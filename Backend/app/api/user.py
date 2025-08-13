@@ -116,6 +116,7 @@ def get_company_data(db: Session = Depends(get_db)):
 
     result = []
     for c in companies:
+        key_financial_data = None
         if c.key_financial_data_id in key_data_map:
             kfd = key_data_map[c.key_financial_data_id]
             status_value = "Active" if kfd.company_registered_number else "Inactive"
