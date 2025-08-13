@@ -111,35 +111,49 @@ def get_company_data(db: Session = Depends(get_db)):
         except Exception:
             return None
 
-    return [
-    {
-        "id": c.id,
-        "company_name": c.company_name,
-        "registration_number": key_data_map[c.key_financial_data_id].company_registered_number
-            if c.key_financial_data_id in key_data_map else None,
-        "company_status": (
-            "Active"
-            if c.key_financial_data_id in key_data_map
-            and key_data_map[c.key_financial_data_id].company_registered_number
-            else "Inactive"
-        ),
-        "approval_stage": c.approval_stage,
-        "status": c.status,
-        "type_of_scheme": c.type_of_scheme,
-        "last_modified": c.last_modified,
-        "turnover_latest": extract_latest(key_data_map[c.key_financial_data_id].turnover_data)
-            if c.key_financial_data_id in key_data_map else None,
-        "assets_fair_value_latest": extract_latest(key_data_map[c.key_financial_data_id].fair_value_assets)
-            if c.key_financial_data_id in key_data_map else None,
-        "turnover_data": key_data_map[c.key_financial_data_id].turnover_data
-            if c.key_financial_data_id in key_data_map else {},
-        "fair_value_assets": key_data_map[c.key_financial_data_id].fair_value_assets
-            if c.key_financial_data_id in key_data_map else {},
-        "people_page_link": c.people_page_link or f"/people/{c.id}",
-        "summary_notes_link": c.summary_notes_link or f"/summary-notes/{c.id}",
-    }
-    for c in companies
-]
+    # Keep track of changes for bulk commit
+    updated = False
+
+    result = []
+    for c in companies:
+        if c.key_financial_data_id in key_data_map:
+            kfd = key_data_map[c.key_financial_data_id]
+            status_value = "Active" if kfd.company_registered_number else "Inactive"
+
+            # Update DB if company_status is different
+            if kfd.company_status != status_value:
+                kfd.company_status = status_value
+                updated = True
+        else:
+            status_value = "Inactive"
+
+        result.append({
+            "id": c.id,
+            "company_name": c.company_name,
+            "registration_number": key_data_map[c.key_financial_data_id].company_registered_number
+                if c.key_financial_data_id in key_data_map else None,
+            "company_status": status_value,
+            "approval_stage": c.approval_stage,
+            "status": c.status,
+            "type_of_scheme": c.type_of_scheme,
+            "last_modified": c.last_modified,
+            "turnover_latest": extract_latest(key_data_map[c.key_financial_data_id].turnover_data)
+                if c.key_financial_data_id in key_data_map else None,
+            "assets_fair_value_latest": extract_latest(key_data_map[c.key_financial_data_id].fair_value_assets)
+                if c.key_financial_data_id in key_data_map else None,
+            "turnover_data": key_data_map[c.key_financial_data_id].turnover_data
+                if c.key_financial_data_id in key_data_map else {},
+            "fair_value_assets": key_data_map[c.key_financial_data_id].fair_value_assets
+                if c.key_financial_data_id in key_data_map else {},
+            "people_page_link": c.people_page_link or f"/people/{c.id}",
+            "summary_notes_link": c.summary_notes_link or f"/summary-notes/{c.id}",
+        })
+
+    # Commit all status updates at once
+    if updated:
+        db.commit()
+
+    return result
 
 
 @router.post("/upload-file")
@@ -226,7 +240,7 @@ def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
 @router.post("/reprocess-company/{company_id}")
 def reprocess_company(company_id: int, db: Session = Depends(get_db)):
     # 1. Get the company instance
-
+    company = db.query(CompanyData).filter(CompanyData.id == company_id).first()
     if not company:
         raise HTTPException(status_code=404, detail="Company not found")
 
@@ -280,8 +294,12 @@ def reprocess_company(company_id: int, db: Session = Depends(get_db)):
         company.status = "Not Started"
 
     db.commit()
-    return {"message": f"Company reprocessed with status {company.status}"}
 
+    #  Return both message and new_status for frontend
+    return {
+        "message": f"Company reprocessed with status {company.status}",
+        "new_status": company.status
+    }
 
 @router.get("/key-financial-data/{company_id}")
 def get_key_financial_data(company_id: int, db: Session = Depends(get_db)):
@@ -572,9 +590,10 @@ def update_registration_number(company_id: int, data: dict = Body(...), db: Sess
         raise HTTPException(status_code=404, detail="Key financial data not found")
 
     key_data.company_registered_number = new_number
+    key_data.company_status = "Active" if new_number else "Inactive"
+
     db.commit()
     return {"message": "Registration number updated successfully"}
-
 
 @router.put("/update-approval-stage/{company_id}")
 def update_approval_stage(company_id: int, data: dict = Body(...), db: Session = Depends(get_db)):
