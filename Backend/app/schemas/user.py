@@ -8,7 +8,7 @@ class UserCreate(BaseModel):
     terms_accepted: bool
 
     class Config:
-        orm_mode = True
+        from_attributes = True  
 
 class UserResponse(BaseModel):
     id: int
