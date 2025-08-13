@@ -124,6 +124,26 @@ def get_company_data(db: Session = Depends(get_db)):
             if kfd.company_status != status_value:
                 kfd.company_status = status_value
                 updated = True
+                
+            # Prepare key financial data for frontend
+            key_financial_data = {
+                "company_status": kfd.company_status,
+                "company_registered_number": kfd.company_registered_number,
+                "incorporation_date": kfd.incorporation_date,
+                "latest_accounts_date": kfd.latest_accounts_date,
+                "Name_of_Defined_Benefit_Arrangement_1": kfd.Name_of_Defined_Benefit_Arrangement_1,
+                "Status_of_Defined_Benefit_Arrangement_1": kfd.Status_of_Defined_Benefit_Arrangement_1,
+                "scheme_actuary_1": kfd.scheme_actuary_1,
+                "scheme_actuary_firm_1": kfd.scheme_actuary_firm_1,
+                "Name_of_Defined_Benefit_Arrangement_2": kfd.Name_of_Defined_Benefit_Arrangement_2,
+                "Status_of_Defined_Benefit_Arrangement_2": kfd.Status_of_Defined_Benefit_Arrangement_2,
+                "scheme_actuary_2": kfd.scheme_actuary_2,
+                "scheme_actuary_firm_2": kfd.scheme_actuary_firm_2,
+                "Name_of_Defined_Benefit_Arrangement_3": kfd.Name_of_Defined_Benefit_Arrangement_3,
+                "Status_of_Defined_Benefit_Arrangement_3": kfd.Status_of_Defined_Benefit_Arrangement_3,
+                "scheme_actuary_3": kfd.scheme_actuary_3,
+                "scheme_actuary_firm_3": kfd.scheme_actuary_firm_3,
+            }
         else:
             status_value = "Inactive"
 
@@ -147,6 +167,7 @@ def get_company_data(db: Session = Depends(get_db)):
                 if c.key_financial_data_id in key_data_map else {},
             "people_page_link": c.people_page_link or f"/people/{c.id}",
             "summary_notes_link": c.summary_notes_link or f"/summary-notes/{c.id}",
+            "key_financial_data": key_financial_data,  # Add this line
         })
 
     # Commit all status updates at once
@@ -154,7 +175,6 @@ def get_company_data(db: Session = Depends(get_db)):
         db.commit()
 
     return result
-
 
 @router.post("/upload-file")
 def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
@@ -248,6 +268,7 @@ def reprocess_company(company_id: int, db: Session = Depends(get_db)):
     key_data = db.query(KeyFinancialData).filter(
         KeyFinancialData.id == company.key_financial_data_id
     ).first()
+
 
     if not key_data:
         raise HTTPException(status_code=404, detail="Key financial data not found for this company")

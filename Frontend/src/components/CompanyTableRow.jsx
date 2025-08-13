@@ -1,5 +1,5 @@
 // components/CompanyTableRow.jsx
-import React from "react";
+import React, { useState } from "react";
 import {
   TableRow,
   TableCell,
@@ -11,8 +11,16 @@ import {
   CircularProgress,
   Button,
   MenuItem,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  List,
+  ListItem,
+  ListItemText,
+  Divider,
 } from "@mui/material";
-import { Refresh as RefreshIcon } from "@mui/icons-material";
+import { Refresh as RefreshIcon, Info as InfoIcon } from "@mui/icons-material";
 
 const CompanyTableRow = ({
   company,
@@ -26,6 +34,8 @@ const CompanyTableRow = ({
   onNavigate,
   onApprovalChange,
 }) => {
+  const [schemeDialogOpen, setSchemeDialogOpen] = useState(false);
+
   const currentRegistrationValue =
     editedRegistrations[company.id] ?? company.registration_number ?? "";
 
@@ -102,218 +112,341 @@ const CompanyTableRow = ({
     textAlign: "center",
   });
 
+  // Extract scheme statuses from company data
+  const getSchemeStatuses = () => {
+    const statuses = [];
+    
+    if (company.key_financial_data) {
+      const keyData = company.key_financial_data;
+      
+      if (keyData.Status_of_Defined_Benefit_Arrangement_1) {
+        statuses.push({
+          arrangement: keyData.Name_of_Defined_Benefit_Arrangement_1 || "Arrangement 1",
+          status: keyData.Status_of_Defined_Benefit_Arrangement_1,
+        });
+      }
+      
+      if (keyData.Status_of_Defined_Benefit_Arrangement_2) {
+        statuses.push({
+          arrangement: keyData.Name_of_Defined_Benefit_Arrangement_2 || "Arrangement 2",
+          status: keyData.Status_of_Defined_Benefit_Arrangement_2,
+        });
+      }
+      
+      if (keyData.Status_of_Defined_Benefit_Arrangement_3) {
+        statuses.push({
+          arrangement: keyData.Name_of_Defined_Benefit_Arrangement_3 || "Arrangement 3",
+          status: keyData.Status_of_Defined_Benefit_Arrangement_3,
+        });
+      }
+    }
+    
+    return statuses;
+  };
+
+  const schemeStatuses = getSchemeStatuses();
+  const hasSchemeData = schemeStatuses.length > 0;
+
+  const handleSchemeTypeClick = () => {
+    if (hasSchemeData) {
+      setSchemeDialogOpen(true);
+    }
+  };
+
   return (
-    <TableRow key={company.id}>
-      <TableCell padding="checkbox">
-        <Checkbox
-          size={isSmall ? "small" : "medium"}
-          checked={company.selected}
-          onChange={() => onSelect(company.id)}
-          disabled={company.company_status === "Inactive"} // Disable if inactive
-        />
-      </TableCell>
-
-      <TableCell>
-        <Typography
-          variant="body2"
-          sx={{
-            fontSize: { xs: "0.75rem", sm: "0.875rem" },
-            wordBreak: "break-word",
-          }}
-        >
-          {company.company_name}
-        </Typography>
-      </TableCell>
-      <TableCell>
-        <Typography
-          variant="body2"
-          sx={{
-            fontSize: { xs: "0.75rem", sm: "0.875rem" },
-            color: company.company_status === "Active" ? "green" : "red",
-            fontWeight: "bold",
-          }}
-        >
-          {company.company_status}
-        </Typography>
-      </TableCell>
-
-      <TableCell>
-        <Box
-          sx={{ display: "flex", alignItems: "center", gap: 1, minWidth: 120 }}
-        >
-          <TextField
-            size="small"
-            value={currentRegistrationValue}
-            onChange={(e) => onRegistrationChange(company.id, e.target.value)}
-            variant="standard"
-            disabled={company.approval_stage === 1}
-            InputProps={{
-              readOnly: company.approval_stage === 1,
-            }}
-            sx={{
-              "& .MuiInputBase-input": {
-                fontSize: { xs: "0.75rem", sm: "0.875rem" },
-                color: "text.primary",
-                fontWeight: company.approval_stage === 1 ? "bold" : "normal",
-              },
-              "& .MuiInput-root:before": {
-                borderBottom: company.approval_stage === 1 ? "none" : "inherit",
-              },
-              "& .Mui-disabled": {
-                "-webkit-text-fill-color": "inherit",
-              },
-            }}
+    <>
+      <TableRow key={company.id}>
+        <TableCell padding="checkbox">
+          <Checkbox
+            size={isSmall ? "small" : "medium"}
+            checked={company.selected}
+            onChange={() => onSelect(company.id)}
+            disabled={company.company_status === "Inactive"} // Disable if inactive
           />
-        </Box>
-      </TableCell>
+        </TableCell>
 
-      <TableCell>
-        <IconButton
-          color="primary"
-          onClick={() => onRerunAI(company.id)}
-          disabled={rerunLoading[company.id]}
-          size={isSmall ? "small" : "medium"}
-        >
-          {rerunLoading[company.id] ? (
-            <CircularProgress size={isSmall ? 15 : 20} />
-          ) : (
-            <RefreshIcon sx={{ fontSize: { xs: "1rem", sm: "1.25rem" } }} />
-          )}
-        </IconButton>
-      </TableCell>
+        <TableCell>
+          <Typography
+            variant="body2"
+            sx={{
+              fontSize: { xs: "0.75rem", sm: "0.875rem" },
+              wordBreak: "break-word",
+            }}
+          >
+            {company.company_name}
+          </Typography>
+        </TableCell>
+        <TableCell>
+          <Typography
+            variant="body2"
+            sx={{
+              fontSize: { xs: "0.75rem", sm: "0.875rem" },
+              color: company.company_status === "Active" ? "green" : "red",
+              fontWeight: "bold",
+            }}
+          >
+            {company.company_status}
+          </Typography>
+        </TableCell>
 
-      <TableCell>
-        <Box sx={{ minWidth: 100 }}>
-          {formatYearData(company.turnover_data, "turnover")}
-        </Box>
-      </TableCell>
+        <TableCell>
+          <Box
+            sx={{ display: "flex", alignItems: "center", gap: 1, minWidth: 120 }}
+          >
+            <TextField
+              size="small"
+              value={currentRegistrationValue}
+              onChange={(e) => onRegistrationChange(company.id, e.target.value)}
+              variant="standard"
+              disabled={company.approval_stage === 1}
+              InputProps={{
+                readOnly: company.approval_stage === 1,
+              }}
+              sx={{
+                "& .MuiInputBase-input": {
+                  fontSize: { xs: "0.75rem", sm: "0.875rem" },
+                  color: "text.primary",
+                  fontWeight: company.approval_stage === 1 ? "bold" : "normal",
+                },
+                "& .MuiInput-root:before": {
+                  borderBottom: company.approval_stage === 1 ? "none" : "inherit",
+                },
+                "& .Mui-disabled": {
+                  "-webkit-text-fill-color": "inherit",
+                },
+              }}
+            />
+          </Box>
+        </TableCell>
 
-      <TableCell>
-        <Box sx={{ minWidth: 100 }}>
-          {formatYearData(company.fair_value_assets, "assets")}
-        </Box>
-      </TableCell>
+        <TableCell>
+          <IconButton
+            color="primary"
+            onClick={() => onRerunAI(company.id)}
+            disabled={rerunLoading[company.id]}
+            size={isSmall ? "small" : "medium"}
+          >
+            {rerunLoading[company.id] ? (
+              <CircularProgress size={isSmall ? 15 : 20} />
+            ) : (
+              <RefreshIcon sx={{ fontSize: { xs: "1rem", sm: "1.25rem" } }} />
+            )}
+          </IconButton>
+        </TableCell>
 
-      <TableCell>
-        <Button
-          size="small"
-          variant="outlined"
-          onClick={() => onNavigate(`/company/${company.id}/financial-data`)}
-          sx={{ fontSize: { xs: "0.7rem", sm: "0.8rem" } }}
-        >
-          View
-        </Button>
-      </TableCell>
+        <TableCell>
+          <Box sx={{ minWidth: 100 }}>
+            {formatYearData(company.turnover_data, "turnover")}
+          </Box>
+        </TableCell>
 
-      {!isSmall && (
-        <>
-          {/* <TableCell>
-              <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
-                {company.downloaded_pdfs ? (
+        <TableCell>
+          <Box sx={{ minWidth: 100 }}>
+            {formatYearData(company.fair_value_assets, "assets")}
+          </Box>
+        </TableCell>
+
+        <TableCell>
+          <Button
+            size="small"
+            variant="outlined"
+            onClick={() => onNavigate(`/company/${company.id}/financial-data`)}
+            sx={{ fontSize: { xs: "0.7rem", sm: "0.8rem" } }}
+          >
+            View
+          </Button>
+        </TableCell>
+
+        {!isSmall && (
+          <>
+            <TableCell>
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={() =>
+                  onNavigate(`/company/${company.id}/people`, {
+                    state: {
+                      companyName: company.company_name,
+                      companyId: company.id,
+                    },
+                  })
+                }
+                sx={{ fontSize: { xs: "0.7rem", sm: "0.8rem" } }}
+              >
+                View
+              </Button>
+            </TableCell>
+
+            <TableCell>
+              <Typography variant="body2" sx={{ fontSize: "0.8rem" }}>
+                {company.summary_notes_link ? (
                   <a
-                    href={company.downloaded_pdfs}
+                    href={company.summary_notes_link}
                     target="_blank"
                     rel="noreferrer"
-                    style={{ textDecoration: 'none', color: 'primary.main' }}
+                    style={{ textDecoration: "none", color: "primary.main" }}
                   >
-                    View PDF
+                    View Summary
                   </a>
                 ) : (
                   "-"
                 )}
               </Typography>
-            </TableCell> */}
+            </TableCell>
 
-          <TableCell>
-            <Button
-              size="small"
-              variant="outlined"
-              onClick={() =>
-                onNavigate(`/company/${company.id}/people`, {
-                  state: {
-                    companyName: company.company_name,
-                    companyId: company.id,
-                  },
-                })
-              }
-              sx={{ fontSize: { xs: "0.7rem", sm: "0.8rem" } }}
-            >
-              View
-            </Button>
-          </TableCell>
+            <TableCell>
+              <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                {hasSchemeData ? (
+                  <IconButton
+                    size="small"
+                    onClick={handleSchemeTypeClick}
+                    sx={{ 
+                      color: "#2e7d32",
+                      backgroundColor: "rgba(46, 125, 50, 0.1)",
+                      border: "1px solid rgba(46, 125, 50, 0.3)",
+                      borderRadius: "8px",
+                      padding: "4px",
+                      "&:hover": { 
+                        backgroundColor: "#2e7d32", 
+                        color: "white",
+                        transform: "scale(1.05)"
+                      },
+                      transition: "all 0.2s ease"
+                    }}
+                    title="View Defined Benefit Arrangements"
+                  >
+                    <InfoIcon sx={{ fontSize: "1.1rem" }} />
+                  </IconButton>
+                ) : (
+                  <Box
+                    sx={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      width: "24px",
+                      height: "24px",
+                      borderRadius: "8px",
+                      backgroundColor: "rgba(158, 158, 158, 0.1)",
+                      border: "1px solid rgba(158, 158, 158, 0.3)",
+                      color: "text.disabled"
+                    }}
+                    title="No scheme data available"
+                  >
+                    <Typography variant="body2" sx={{ fontSize: "0.7rem", fontWeight: "bold" }}>
+                      -
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+            </TableCell>
 
-          <TableCell>
-            <Typography variant="body2" sx={{ fontSize: "0.8rem" }}>
-              {company.summary_notes_link ? (
-                <a
-                  href={company.summary_notes_link}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{ textDecoration: "none", color: "primary.main" }}
-                >
-                  View Summary
-                </a>
-              ) : (
-                "-"
-              )}
-            </Typography>
-          </TableCell>
-
-          <TableCell>
-            <Typography variant="body2" sx={{ fontSize: "0.8rem" }}>
-              {company.type_of_scheme || "-"}
-            </Typography>
-          </TableCell>
-
-          <TableCell>
-            <Typography variant="body2" sx={{ fontSize: "0.8rem" }}>
-              {company.last_modified
-                ? new Date(company.last_modified).toLocaleDateString()
-                : "-"}
-            </Typography>
-          </TableCell>
-        </>
-      )}
-
-      <TableCell>
-        {company.status === "Done" ? (
-          <TextField
-            select
-            size="small"
-            value={company.approval_stage}
-            onChange={(e) =>
-              onApprovalChange(company.id, parseInt(e.target.value))
-            }
-            variant="standard"
-            sx={{
-              minWidth: 100,
-              "& .MuiInputBase-input": {
-                fontSize: { xs: "0.75rem", sm: "0.875rem" },
-              },
-            }}
-          >
-            <MenuItem value={0}>Unapproved</MenuItem>
-            <MenuItem value={1}>Approved</MenuItem>
-            <MenuItem value={2}>Rejected</MenuItem>
-          </TextField>
-        ) : (
-          <Typography
-            variant="body2"
-            sx={{
-              fontSize: { xs: "0.7rem", sm: "0.8rem" },
-              color: "text.secondary",
-              fontStyle: "italic",
-            }}
-          >
-            {company.status === "Processing" ? "Processing..." : "Not started"}
-          </Typography>
+            <TableCell>
+              <Typography variant="body2" sx={{ fontSize: "0.8rem" }}>
+                {company.last_modified
+                  ? new Date(company.last_modified).toLocaleDateString()
+                  : "-"}
+              </Typography>
+            </TableCell>
+          </>
         )}
-      </TableCell>
 
-      <TableCell>
-        <Box sx={getStatusStyles(company.status)}>{company.status}</Box>
-      </TableCell>
-    </TableRow>
+        <TableCell>
+          {company.status === "Done" ? (
+            <TextField
+              select
+              size="small"
+              value={company.approval_stage}
+              onChange={(e) =>
+                onApprovalChange(company.id, parseInt(e.target.value))
+              }
+              variant="standard"
+              sx={{
+                minWidth: 100,
+                "& .MuiInputBase-input": {
+                  fontSize: { xs: "0.75rem", sm: "0.875rem" },
+                },
+              }}
+            >
+              <MenuItem value={0}>Unapproved</MenuItem>
+              <MenuItem value={1}>Approved</MenuItem>
+              <MenuItem value={2}>Rejected</MenuItem>
+            </TextField>
+          ) : (
+            <Typography
+              variant="body2"
+              sx={{
+                fontSize: { xs: "0.7rem", sm: "0.8rem" },
+                color: "text.secondary",
+                fontStyle: "italic",
+              }}
+            >
+              {company.status === "Processing" ? "Processing..." : "Not started"}
+            </Typography>
+          )}
+        </TableCell>
+
+        <TableCell>
+          <Box sx={getStatusStyles(company.status)}>{company.status}</Box>
+        </TableCell>
+      </TableRow>
+
+      {/* Scheme Status Dialog */}
+      <Dialog
+        open={schemeDialogOpen}
+        onClose={() => setSchemeDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          <Typography variant="h6" component="div">
+            Defined Benefit Arrangements Status
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {company.company_name}
+          </Typography>
+        </DialogTitle>
+        <DialogContent dividers>
+          <List dense>
+            {schemeStatuses.map((scheme, index) => (
+              <React.Fragment key={index}>
+                <ListItem>
+                  <ListItemText
+                    primary={
+                      <Typography variant="subtitle2" fontWeight="bold">
+                        {scheme.arrangement}
+                      </Typography>
+                    }
+                    secondary={
+                      <Box>
+                        <Typography variant="body2" color="text.primary">
+                          <strong>Status:</strong> {scheme.status}
+                        </Typography>
+                        {scheme.actuary && (
+                          <Typography variant="body2" color="text.secondary">
+                            <strong>Actuary:</strong> {scheme.actuary}
+                          </Typography>
+                        )}
+                        {scheme.firm && (
+                          <Typography variant="body2" color="text.secondary">
+                            <strong>Firm:</strong> {scheme.firm}
+                          </Typography>
+                        )}
+                      </Box>
+                    }
+                  />
+                </ListItem>
+                {index < schemeStatuses.length - 1 && <Divider />}
+              </React.Fragment>
+            ))}
+          </List>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setSchemeDialogOpen(false)} variant="outlined">
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
   );
 };
 
