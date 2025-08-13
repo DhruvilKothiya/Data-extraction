@@ -21,6 +21,7 @@ import {
   Divider,
 } from "@mui/material";
 import { Refresh as RefreshIcon, Info as InfoIcon } from "@mui/icons-material";
+import SummaryDialog from "./SummaryDialog";
 
 const CompanyTableRow = ({
   company,
@@ -35,6 +36,7 @@ const CompanyTableRow = ({
   onApprovalChange,
 }) => {
   const [schemeDialogOpen, setSchemeDialogOpen] = useState(false);
+  const [summaryDialogOpen, setSummaryDialogOpen] = useState(false);
 
   const currentRegistrationValue =
     editedRegistrations[company.id] ?? company.registration_number ?? "";
@@ -276,26 +278,30 @@ const CompanyTableRow = ({
                 View
               </Button>
             </TableCell>
-
             <TableCell>
-              <Typography variant="body2" sx={{ fontSize: "0.8rem" }}>
-                {company.summary_notes_link ? (
-                  <a
-                    href={company.summary_notes_link}
-                    target="_blank"
-                    rel="noreferrer"
-                    style={{ textDecoration: "none", color: "primary.main" }}
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={() => setSummaryDialogOpen(true)}
+                sx={{ fontSize: { xs: "0.7rem", sm: "0.8rem" } }}
                   >
                     View Summary
-                  </a>
-                ) : (
-                  "-"
-                )}
-              </Typography>
+              </Button>
             </TableCell>
-
+            <SummaryDialog
+              open={summaryDialogOpen}
+              onClose={() => setSummaryDialogOpen(false)}
+              company={company}
+              isSmall={isSmall}
+            />
             <TableCell>
-              <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
                 {hasSchemeData ? (
                   <IconButton
                     size="small"

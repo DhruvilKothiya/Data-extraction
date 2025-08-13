@@ -16,5 +16,5 @@ class CompanyData(Base):
     type_of_scheme = Column(String(100), nullable=True)
     last_modified = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     people_page_link = Column(String(255), nullable=True)
-    summary_notes_link = Column(String(255), nullable=True)
+
 

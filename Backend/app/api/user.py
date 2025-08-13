@@ -18,8 +18,9 @@ from app.utils.email import send_reset_email
 from passlib.context import CryptContext
 from app.models.company import CompanyData 
 from app.models.people_data import PeopleData
+from app.models.summary import SummaryNotes
 from app.models.key_financial_data import KeyFinancialData
-from typing import List
+from typing import List,Optional
 import shutil
 
 router = APIRouter()
@@ -167,7 +168,7 @@ def get_company_data(db: Session = Depends(get_db)):
             "fair_value_assets": key_data_map[c.key_financial_data_id].fair_value_assets
                 if c.key_financial_data_id in key_data_map else {},
             "people_page_link": c.people_page_link or f"/people/{c.id}",
-            "summary_notes_link": c.summary_notes_link or f"/summary-notes/{c.id}",
+            # "summary_notes_link": c.summary_notes_link or f"/summary-notes/{c.id}",
             "key_financial_data": key_financial_data,  # Add this line
         })
 
@@ -476,28 +477,29 @@ def export_selected_key_financial_data(
     people_df = None
     if include_people:
         # 1. Get registered numbers for selected companies from KeyFinancialData
-        registered_numbers = (
-            db.query(KeyFinancialData.company_registered_number)
-            .filter(KeyFinancialData.id.in_([c.id for c in companies]))
-            .filter(KeyFinancialData.company_registered_number.isnot(None))
-            .all()
-        )
-        registered_numbers = [rn[0] for rn in registered_numbers]
+        registered_numbers = []
+        for company in companies:
+            if company.key_financial_data_id and company.key_financial_data_id in key_data_by_id:
+                key_data = key_data_by_id[company.key_financial_data_id]
+                if key_data.company_registered_number:
+                    registered_numbers.append(key_data.company_registered_number)
 
         # 2. Fetch people data by matching on registered number
-        people_data = (
-            db.query(PeopleData)
-            .filter(PeopleData.company_registered_number.in_(registered_numbers))
-            .all()
-        )
+        people_data = []
+        if registered_numbers:
+            people_data = (
+                db.query(PeopleData)
+                .filter(PeopleData.company_registered_number.in_(registered_numbers))
+                .all()
+            )
 
         # 3. Map registered numbers to company names
-        company_map = {
-            kfd.company_registered_number: kfd.company_name
-            for kfd in db.query(KeyFinancialData)
-            .filter(KeyFinancialData.company_registered_number.in_(registered_numbers))
-            .all()
-        }
+        company_map = {}
+        for company in companies:
+            if company.key_financial_data_id and company.key_financial_data_id in key_data_by_id:
+                key_data = key_data_by_id[company.key_financial_data_id]
+                if key_data.company_registered_number:
+                    company_map[key_data.company_registered_number] = company.company_name
 
         # 4. Build export rows
         people_rows = []
@@ -511,8 +513,6 @@ def export_selected_key_financial_data(
                 "Date of Birth": person.date_of_birth
             })
 
-
-        
         # Create DataFrame even if no data (will have headers)
         if people_rows:
             people_df = pd.DataFrame(people_rows)
@@ -520,15 +520,65 @@ def export_selected_key_financial_data(
             # Create empty DataFrame with proper headers
             people_df = pd.DataFrame(columns=[
                 "Company Name", 
-                "Company ID", 
                 "Person Name", 
                 "Role/Position", 
                 "Appointment Date", 
                 "Date of Birth"
             ])
     
-    # Prepare Summary Notes Data
-    summary_df = pd.DataFrame([{"Company Name": c.company_name, "Summary Notes": "[Summary Notes Placeholder]"} for c in companies]) if include_summary else None
+    # Prepare Summary Notes Data - UPDATED WITH REAL DATA
+    summary_df = None
+    if include_summary:
+        # 1. Get registered numbers for selected companies from KeyFinancialData
+        registered_numbers = []
+        for company in companies:
+            if company.key_financial_data_id and company.key_financial_data_id in key_data_by_id:
+                key_data = key_data_by_id[company.key_financial_data_id]
+                if key_data.company_registered_number:
+                    registered_numbers.append(key_data.company_registered_number)
+
+        # 2. Fetch summary data by matching on registered number
+        summary_data = {}
+        if registered_numbers:
+            summary_notes_list = (
+                db.query(SummaryNotes)
+                .filter(SummaryNotes.company_registered_number.in_(registered_numbers))
+                .all()
+            )
+            # Create a mapping of registration number to summary
+            summary_data = {
+                summary.company_registered_number: summary.summary 
+                for summary in summary_notes_list
+            }
+
+        # 3. Build export rows
+        summary_rows = []
+        for company in companies:
+            # Get the company's registered number
+            key_data = key_data_by_id.get(company.key_financial_data_id)
+            registration_number = key_data.company_registered_number if key_data else None
+            
+            if registration_number and registration_number in summary_data:
+                summary_text = summary_data[registration_number]
+            else:
+                summary_text = "No summary available" if registration_number else "No summary available - registration number not found"
+
+            summary_rows.append({
+                "Company Name": company.company_name,
+                "Company Registration Number": registration_number or "Not available",
+                "Summary Notes": summary_text
+            })
+
+        # Create DataFrame
+        if summary_rows:
+            summary_df = pd.DataFrame(summary_rows)
+        else:
+            # Create empty DataFrame with proper headers
+            summary_df = pd.DataFrame(columns=[
+                "Company Name", 
+                "Company Registration Number",
+                "Summary Notes"
+            ])
     
     # Write to Excel in memory
     output = BytesIO()
@@ -595,8 +645,8 @@ def export_selected_key_financial_data(
         output,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": "attachment; filename=exported_companies.xlsx"}
-    )
-     
+    )  
+      
 @router.put("/update-registration-number/{company_id}")
 def update_registration_number(company_id: int, data: dict = Body(...), db: Session = Depends(get_db)):
     new_number = data.get("registration_number")
@@ -674,3 +724,95 @@ def get_people_for_company(company_id: int, db: Session = Depends(get_db)):
         }
         for person in people
     ]
+
+
+@router.get("/summary-notes/{company_id}")
+def get_summary_notes(company_id: int, db: Session = Depends(get_db)):
+    """Get summary notes for a company by company ID"""
+    # First get the company's registered number
+    company = db.query(CompanyData).filter(CompanyData.id == company_id).first()
+    if not company:
+        raise HTTPException(status_code=404, detail="Company not found")
+    
+    # Get key financial data to find registered number
+    key_data = db.query(KeyFinancialData).filter(
+        KeyFinancialData.id == company.key_financial_data_id
+    ).first()
+    
+    if not key_data or not key_data.company_registered_number:
+        return {"summary": "No summary available - registration number not found"}
+    
+    # Find summary notes by registered number
+    summary_notes = db.query(SummaryNotes).filter(
+        SummaryNotes.company_registered_number == key_data.company_registered_number
+    ).first()
+    
+    if not summary_notes:
+        return {"summary": "No summary notes available for this company"}
+    
+    return {
+        "summary": summary_notes.summary,
+        "company_registered_number": summary_notes.company_registered_number,
+        "created_at": summary_notes.created_at,
+        "updated_at": summary_notes.updated_at
+    }
+
+@router.post("/summary-notes/{company_id}")
+def create_or_update_summary_notes(
+    company_id: int, 
+    data: dict = Body(...), 
+    db: Session = Depends(get_db)
+):
+    """Create or update summary notes for a company"""
+    summary_text = data.get("summary")
+    if not summary_text:
+        raise HTTPException(status_code=400, detail="Summary text is required")
+    
+    # Get company and registered number
+    company = db.query(CompanyData).filter(CompanyData.id == company_id).first()
+    if not company:
+        raise HTTPException(status_code=404, detail="Company not found")
+    
+    key_data = db.query(KeyFinancialData).filter(
+        KeyFinancialData.id == company.key_financial_data_id
+    ).first()
+    
+    if not key_data or not key_data.company_registered_number:
+        raise HTTPException(status_code=400, detail="Company registration number not found")
+    
+    # Check if summary already exists
+    existing_summary = db.query(SummaryNotes).filter(
+        SummaryNotes.company_registered_number == key_data.company_registered_number
+    ).first()
+    
+    if existing_summary:
+        # Update existing summary
+        existing_summary.summary = summary_text
+        db.commit()
+        return {"message": "Summary updated successfully"}
+    else:
+        # Create new summary
+        new_summary = SummaryNotes(
+            company_registered_number=key_data.company_registered_number,
+            summary=summary_text
+        )
+        db.add(new_summary)
+        db.commit()
+        return {"message": "Summary created successfully"}
+
+@router.get("/summary-notes-by-registration/{registration_number}")
+def get_summary_by_registration(registration_number: str, db: Session = Depends(get_db)):
+    """Get summary notes by registration number directly"""
+    summary_notes = db.query(SummaryNotes).filter(
+        SummaryNotes.company_registered_number == registration_number
+    ).first()
+    
+    if not summary_notes:
+        return {"summary": "No summary notes available for this registration number"}
+    
+    return {
+        "summary": summary_notes.summary,
+        "company_registered_number": summary_notes.company_registered_number,
+        "created_at": summary_notes.created_at,
+        "updated_at": summary_notes.updated_at
+    }
