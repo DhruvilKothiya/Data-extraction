@@ -701,7 +701,7 @@ def get_people_for_company(company_id: int, db: Session = Depends(get_db)):
     if not company_financial:
         raise HTTPException(status_code=404, detail="Company not found")
 
-    # Find people whose registered number matches
+    # Get all people for that registered number
     people = (
         db.query(PeopleData)
         .filter(
@@ -713,6 +713,21 @@ def get_people_for_company(company_id: int, db: Session = Depends(get_db)):
     if not people:
         return []
 
+    # Deduplicate based on all 5 fields
+    seen = set()
+    unique_people = []
+    for person in people:
+        key = (
+            person.name.strip() if person.name else None,
+            person.role.strip() if person.role else None,
+            str(person.appointment_date) if person.appointment_date else None,
+            str(person.date_of_birth) if person.date_of_birth else None,
+            person.company_registered_number.strip() if person.company_registered_number else None
+        )
+        if key not in seen:
+            seen.add(key)
+            unique_people.append(person)
+
     return [
         {
             "id": person.id,
@@ -722,9 +737,8 @@ def get_people_for_company(company_id: int, db: Session = Depends(get_db)):
             "date_of_birth": person.date_of_birth,
             "company_registered_number": person.company_registered_number
         }
-        for person in people
+        for person in unique_people
     ]
-
 
 @router.get("/summary-notes/{company_id}")
 def get_summary_notes(company_id: int, db: Session = Depends(get_db)):
@@ -763,7 +777,7 @@ def create_or_update_summary_notes(
     data: dict = Body(...), 
     db: Session = Depends(get_db)
 ):
-    """Create or update summary notes for a company"""
+    """Create or update summary notes for a company, skipping exact duplicates"""
     summary_text = data.get("summary")
     if not summary_text:
         raise HTTPException(status_code=400, detail="Summary text is required")
@@ -785,8 +799,12 @@ def create_or_update_summary_notes(
         SummaryNotes.company_registered_number == key_data.company_registered_number
     ).first()
     
+    # If same registration number & summary text exists → skip insertion
+    if existing_summary and existing_summary.summary.strip() == summary_text.strip():
+        return {"message": "Duplicate summary - no changes made"}
+    
     if existing_summary:
-        # Update existing summary
+        # Update only if content differs
         existing_summary.summary = summary_text
         db.commit()
         return {"message": "Summary updated successfully"}
