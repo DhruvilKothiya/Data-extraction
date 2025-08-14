@@ -38,13 +38,14 @@ const CompanyTableRow = ({
   const [schemeDialogOpen, setSchemeDialogOpen] = useState(false);
   const [summaryDialogOpen, setSummaryDialogOpen] = useState(false);
 
+  const isInactive = company.company_status === "Inactive"; // ✅ new helper variable
+
   const currentRegistrationValue =
     editedRegistrations[company.id] ?? company.registration_number ?? "";
 
   const formatYearData = (data, type) => {
     if (!data) return "-";
 
-    // Filter out years with 0 or null
     const validYears = Object.keys(data)
       .filter((year) => {
         const value = data[year];
@@ -69,6 +70,7 @@ const CompanyTableRow = ({
           <Button
             size="small"
             onClick={() => onOpenDetail(company, type)}
+            disabled={isInactive} // disable if inactive
             sx={{ fontSize: "0.7rem", p: 0.5 }}
           >
             More
@@ -157,13 +159,19 @@ const CompanyTableRow = ({
 
   return (
     <>
-      <TableRow key={company.id}>
+      <TableRow
+        key={company.id}
+        sx={{
+          opacity: isInactive ? 0.5 : 1,
+          pointerEvents: isInactive ? "none" : "auto",
+        }}
+      >
         <TableCell padding="checkbox">
           <Checkbox
             size={isSmall ? "small" : "medium"}
             checked={company.selected}
             onChange={() => onSelect(company.id)}
-            disabled={company.company_status === "Inactive"} // Disable if inactive
+            disabled={isInactive}
           />
         </TableCell>
 
@@ -200,9 +208,9 @@ const CompanyTableRow = ({
               value={currentRegistrationValue}
               onChange={(e) => onRegistrationChange(company.id, e.target.value)}
               variant="standard"
-              disabled={company.approval_stage === 1}
+              disabled={isInactive || company.approval_stage === 1}
               InputProps={{
-                readOnly: company.approval_stage === 1,
+                readOnly: isInactive || company.approval_stage === 1,
               }}
               sx={{
                 "& .MuiInputBase-input": {
@@ -225,7 +233,7 @@ const CompanyTableRow = ({
           <IconButton
             color="primary"
             onClick={() => onRerunAI(company.id)}
-            disabled={rerunLoading[company.id]}
+            disabled={isInactive || rerunLoading[company.id]}
             size={isSmall ? "small" : "medium"}
           >
             {rerunLoading[company.id] ? (
@@ -253,6 +261,7 @@ const CompanyTableRow = ({
             size="small"
             variant="outlined"
             onClick={() => onNavigate(`/company/${company.id}/financial-data`)}
+            disabled={isInactive}
             sx={{ fontSize: { xs: "0.7rem", sm: "0.8rem" } }}
           >
             View
@@ -273,6 +282,7 @@ const CompanyTableRow = ({
                     },
                   })
                 }
+                disabled={isInactive}
                 sx={{ fontSize: { xs: "0.7rem", sm: "0.8rem" } }}
               >
                 View
@@ -283,9 +293,10 @@ const CompanyTableRow = ({
                 size="small"
                 variant="outlined"
                 onClick={() => setSummaryDialogOpen(true)}
+                disabled={isInactive}
                 sx={{ fontSize: { xs: "0.7rem", sm: "0.8rem" } }}
-                  >
-                    View Summary
+              >
+                View Summary
               </Button>
             </TableCell>
             <SummaryDialog
@@ -306,14 +317,15 @@ const CompanyTableRow = ({
                   <IconButton
                     size="small"
                     onClick={handleSchemeTypeClick}
-                    sx={{ 
+                    disabled={isInactive}
+                    sx={{
                       color: "#2e7d32",
                       backgroundColor: "rgba(46, 125, 50, 0.1)",
                       border: "1px solid rgba(46, 125, 50, 0.3)",
                       borderRadius: "8px",
                       padding: "4px",
-                      "&:hover": { 
-                        backgroundColor: "#2e7d32", 
+                      "&:hover": {
+                        backgroundColor: "#2e7d32",
                         color: "white",
                         transform: "scale(1.05)"
                       },
@@ -362,9 +374,8 @@ const CompanyTableRow = ({
               select
               size="small"
               value={company.approval_stage}
-              onChange={(e) =>
-                onApprovalChange(company.id, parseInt(e.target.value))
-              }
+              onChange={(e) => onApprovalChange(company.id, parseInt(e.target.value))}
+              disabled={isInactive}
               variant="standard"
               sx={{
                 minWidth: 100,
