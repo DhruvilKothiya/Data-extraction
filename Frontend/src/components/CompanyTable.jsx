@@ -59,6 +59,7 @@ const CompanyTable = ({
         component={Paper}
         elevation={0}
         sx={{
+          width: '100%',
           overflowX: 'auto',
           '& .MuiTable-root': {
             minWidth: { xs: 800, sm: 1000 }

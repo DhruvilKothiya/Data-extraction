@@ -123,7 +123,7 @@ const HomePage = () => {
   // Show loading state until data is loaded
   if (!dataLoaded) {
     return (
-      <Box sx={{ display: "flex", minHeight: "100vh" }}>
+      <Box sx={{ display: "flex", minHeight: "100vh", width: '100%', overflowX: 'hidden' }}>
         <Sidebar mobileOpen={mobileOpen} onDrawerToggle={handleDrawerToggle} />
         <Box
           sx={{
@@ -141,7 +141,7 @@ const HomePage = () => {
   }
 
   return (
-    <Box sx={{ display: "flex", minHeight: "100vh" }}>
+    <Box sx={{ display: "flex", width: '100%' }}>
       <Sidebar mobileOpen={mobileOpen} onDrawerToggle={handleDrawerToggle} />
 
       <Box
@@ -149,7 +149,9 @@ const HomePage = () => {
           flexGrow: 1,
           ml: { xs: 0, md: `${sidebarWidth}px` },
           display: "flex",
+          width: '100%',
           flexDirection: "column",
+          minWidth: 0,
         }}
       >
         {/* Header */}
@@ -165,12 +167,14 @@ const HomePage = () => {
 
         {/* Main Content */}
         <Container
-          maxWidth={false}
+          maxWidth="xl"
+          disableGutters={isSmall}
           sx={{
             mt: { xs: 2, sm: 4 },
             flex: 1,
             px: { xs: 1, sm: 2, md: 3 },
             maxWidth: { xs: '100%', lg: '1430px' },
+            width: '100%',
             mx: "auto",
           }}
         >

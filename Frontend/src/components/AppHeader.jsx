@@ -29,6 +29,7 @@ const AppHeader = ({
     <Box
       sx={{ 
         display: "flex",
+        flexWrap: "wrap",
         justifyContent: "space-between",
         alignItems: "center",
         p: { xs: 1.5, sm: 2 },
@@ -37,9 +38,12 @@ const AppHeader = ({
         position: "sticky",
         top: 0,
         zIndex: 1100,
+        width: '100%',
+        boxSizing: 'border-box',
+        
       }}
     >
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 1.5 }, minWidth: 0, flex: '1 1 auto' }}>
         {isMobile && (
           <IconButton
             color="inherit"
@@ -52,12 +56,13 @@ const AppHeader = ({
         )}
         <Typography
           variant={isSmall ? "h6" : "h5"}
-          sx={{ fontWeight: "bold" }}
+          noWrap
+          sx={{ fontWeight: "bold", maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis' }}
         >
           Company
         </Typography>
       </Box>
-      <Box sx={{ display: "flex", gap: { xs: 1, sm: 2 } }}>
+      <Box sx={{ display: "flex", gap: { xs: 1, sm: 2 }, flexShrink: 0 }}>
         <IconButton size={isSmall ? "small" : "medium"}>
           <Badge badgeContent={2} color="error">
             <NotificationsIcon />
