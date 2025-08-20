@@ -49,7 +49,9 @@ const CompanyTableRow = ({
     const validYears = Object.keys(data)
       .filter((year) => {
         const value = data[year];
-        return value !== null && value !== 0;
+        return value !== null && value !== 0 && 
+          (typeof value !== 'object' || 
+           (value !== null && Object.keys(value).length > 0));
       })
       .sort()
       .reverse();
@@ -57,6 +59,17 @@ const CompanyTableRow = ({
     if (validYears.length === 0) return "-";
 
     const latestYear = validYears[0];
+    const latestValue = data[latestYear];
+    let displayValue;
+
+    if (latestValue !== null && typeof latestValue === 'object') {
+      // If the value is an object, create a string representation
+      displayValue = Object.entries(latestValue)
+        .map(([key, val]) => `${key}: ${val}`)
+        .join(', ');
+    } else {
+      displayValue = latestValue;
+    }
 
     return (
       <>
@@ -64,7 +77,7 @@ const CompanyTableRow = ({
           variant="body2"
           sx={{ fontSize: { xs: "0.7rem", sm: "0.8rem" } }}
         >
-          {latestYear}: {data[latestYear]}
+          {latestYear}: {displayValue}
         </Typography>
         {validYears.length > 1 && (
           <Button
