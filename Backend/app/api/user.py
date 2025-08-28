@@ -19,6 +19,7 @@ from passlib.context import CryptContext
 from app.models.company import CompanyData 
 from app.models.people_data import PeopleData
 from app.models.summary import SummaryNotes
+from app.models.company_pdfs import CompanyPDFs
 from app.models.key_financial_data import KeyFinancialData
 from typing import List,Optional
 import shutil
@@ -102,6 +103,14 @@ def get_company_data(db: Session = Depends(get_db)):
     key_data_ids = [c.key_financial_data_id for c in companies if c.key_financial_data_id]
     key_data_list = db.query(KeyFinancialData).filter(KeyFinancialData.id.in_(key_data_ids)).all()
     key_data_map = {k.id: k for k in key_data_list}
+    pdf_data_map = {}
+    registered_numbers = [kfd.company_registered_number for kfd in key_data_list if kfd.company_registered_number]
+    if registered_numbers:
+        pdf_data_list = db.query(CompanyPDFs).filter(
+            CompanyPDFs.company_registered_number.in_(registered_numbers)
+        ).all()
+        pdf_data_map = {pdf.company_registered_number: pdf.pdf_links or [] for pdf in pdf_data_list}
+    
 
     def extract_latest(json_data):
         if not json_data or not isinstance(json_data, dict):
@@ -169,7 +178,10 @@ def get_company_data(db: Session = Depends(get_db)):
                 if c.key_financial_data_id in key_data_map else {},
             "people_page_link": c.people_page_link or f"/people/{c.id}",
             # "summary_notes_link": c.summary_notes_link or f"/summary-notes/{c.id}",
-            "key_financial_data": key_financial_data,  # Add this line
+            "key_financial_data": key_financial_data, 
+            "pdf_links": pdf_data_map.get(
+                key_data_map[c.key_financial_data_id].company_registered_number, []
+            ) if c.key_financial_data_id in key_data_map else [],
         })
 
     # Commit all status updates at once
