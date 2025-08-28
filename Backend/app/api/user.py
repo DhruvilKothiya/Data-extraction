@@ -834,3 +834,15 @@ def get_summary_by_registration(registration_number: str, db: Session = Depends(
         "created_at": summary_notes.created_at,
         "updated_at": summary_notes.updated_at
     }
+    
+@router.get("/company-pdfs/{registration_number}")
+def get_company_pdfs(registration_number: str, db: Session = Depends(get_db)):
+    """Get PDF links for a company by registration number"""
+    company_pdfs = db.query(CompanyPDFs).filter(
+        CompanyPDFs.company_registered_number == registration_number
+    ).first()
+    
+    if not company_pdfs or not company_pdfs.pdf_links:
+        return {"pdf_links": []}
+    
+    return {"pdf_links": company_pdfs.pdf_links}
