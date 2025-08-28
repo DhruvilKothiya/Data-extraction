@@ -88,7 +88,7 @@ const CompanyTableHeader = ({
         <TableCell>Key Financial Data</TableCell>
         {!isSmall && (
           <>
-            {/* <TableCell>PDFs</TableCell> */}
+            <TableCell>PDFs</TableCell>
             <TableCell>People Page</TableCell>
             <TableCell>Summary Notes</TableCell>
             <TableCell>Scheme Type</TableCell>
