@@ -7,6 +7,7 @@ from app.models.csv_file_data import CSVFileData
 from app.models.key_financial_data import KeyFinancialData
 from app.models.people_data import PeopleData
 from app.models.summary import SummaryNotes
+from app.models.company_pdfs import CompanyPDFs
 from app.db.base import Base  # SQLAlchemy Base
 from app.core.config import DATABASE_URL 
 
@@ -15,7 +16,6 @@ config = context.config
 
 # Set sqlalchemy URL using imported DATABASE_URL
 config.set_main_option("sqlalchemy.url", DATABASE_URL)  
-
 # Set up logging
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
