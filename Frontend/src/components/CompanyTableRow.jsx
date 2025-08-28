@@ -22,6 +22,7 @@ import {
 } from "@mui/material";
 import { Refresh as RefreshIcon, Info as InfoIcon } from "@mui/icons-material";
 import SummaryDialog from "./SummaryDialog";
+import PDFLinksCell from "./PDFLinksCell";
 
 const CompanyTableRow = ({
   company,
@@ -132,24 +133,24 @@ const CompanyTableRow = ({
   // Extract scheme statuses from company data
   const getSchemeStatuses = () => {
     const statuses = [];
-    
+
     if (company.key_financial_data) {
       const keyData = company.key_financial_data;
-      
+
       if (keyData.Status_of_Defined_Benefit_Arrangement_1) {
         statuses.push({
           arrangement: keyData.Name_of_Defined_Benefit_Arrangement_1 || "Arrangement 1",
           status: keyData.Status_of_Defined_Benefit_Arrangement_1,
         });
       }
-      
+
       if (keyData.Status_of_Defined_Benefit_Arrangement_2) {
         statuses.push({
           arrangement: keyData.Name_of_Defined_Benefit_Arrangement_2 || "Arrangement 2",
           status: keyData.Status_of_Defined_Benefit_Arrangement_2,
         });
       }
-      
+
       if (keyData.Status_of_Defined_Benefit_Arrangement_3) {
         statuses.push({
           arrangement: keyData.Name_of_Defined_Benefit_Arrangement_3 || "Arrangement 3",
@@ -157,7 +158,7 @@ const CompanyTableRow = ({
         });
       }
     }
-    
+
     return statuses;
   };
 
@@ -280,6 +281,14 @@ const CompanyTableRow = ({
             View
           </Button>
         </TableCell>
+        {!isSmall && (
+          <TableCell>
+            <PDFLinksCell
+              pdfLinks={company.pdf_links || []}
+              disabled={isInactive}
+            />
+          </TableCell>
+        )}
 
         {!isSmall && (
           <>
