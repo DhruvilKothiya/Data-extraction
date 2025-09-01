@@ -272,7 +272,7 @@ def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=f"Failed to process file: {str(e)}")
 
 @router.post("/reprocess-company/{company_id}")
-def reprocess_company(company_id: int, db: Session = Depends(get_db)):
+def reprocess_company(company_id: int, request: ReprocessRequest, db: Session = Depends(get_db)):
     # 1. Get the company instance
     company = db.query(CompanyData).filter(CompanyData.id == company_id).first()
     if not company:
@@ -286,16 +286,18 @@ def reprocess_company(company_id: int, db: Session = Depends(get_db)):
     if not key_data:
         raise HTTPException(status_code=404, detail="Key financial data not found for this company")
 
-    registration_number = key_data.company_registered_number or ""
+    # 3. Use registration number from request if provided, otherwise from database
+    registration_number = request.registration_number if request.registration_number else key_data.company_registered_number
+    
     if not registration_number:
         raise HTTPException(status_code=400, detail="Registration number not found")
    
-    # 3. Set status to Processing before starting
+    # 4. Set status to Processing before starting
     company.status = "Processing"
     db.commit()
 
     try:
-        # 4. Call the external AI processing service
+        # 5. Call the external AI processing service
         api_response = requests.post(
             "http://3.88.145.160:8002/process_company_by_reg_number",
             json={"registration_number": registration_number}
@@ -333,8 +335,7 @@ def reprocess_company(company_id: int, db: Session = Depends(get_db)):
     return {
         "message": f"Company reprocessed with status {company.status}",
         "new_status": company.status
-    }
-@router.get("/key-financial-data/{company_id}")
+    }@router.get("/key-financial-data/{company_id}")
 def get_key_financial_data(company_id: int, db: Session = Depends(get_db)):
     company = db.query(CompanyData).filter(CompanyData.id == company_id).first()
 
