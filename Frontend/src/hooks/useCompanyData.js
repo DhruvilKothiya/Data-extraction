@@ -36,14 +36,14 @@ export const useCompanyData = () => {
     }
   };
 
-  const handleRerunAI = async (companyId) => {
+  const handleRerunAI = async (companyId, registrationNumber) => {
     try {
       setRerunLoading((prev) => ({ ...prev, [companyId]: true }));
       const token = localStorage.getItem("token");
 
       const response = await axios.post(
         `${process.env.REACT_APP_API_URL}/reprocess-company/${companyId}`,
-        {},
+        { registration_number: registrationNumber }, 
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -56,8 +56,6 @@ export const useCompanyData = () => {
       );
 
       toast.success("Re-run started successfully");
-
-      // Refresh data after delay
       setTimeout(fetchCompanyData, 2000);
     } catch (err) {
       console.error(err);

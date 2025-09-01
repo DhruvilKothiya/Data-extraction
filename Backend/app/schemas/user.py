@@ -31,3 +31,5 @@ class ResetPasswordSchema(BaseModel):
     token: str
     new_password: str
 
+class ReprocessRequest(BaseModel):
+    registration_number: str

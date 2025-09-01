@@ -272,7 +272,9 @@ def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=f"Failed to process file: {str(e)}")
 
 @router.post("/reprocess-company/{company_id}")
-def reprocess_company(company_id: int, db: Session = Depends(get_db)):
+def reprocess_company(company_id: int, request: ReprocessRequest, db: Session = Depends(get_db)):
+    
+    registration_number = request.registration_number
     # 1. Get the company instance
     company = db.query(CompanyData).filter(CompanyData.id == company_id).first()
     if not company:
