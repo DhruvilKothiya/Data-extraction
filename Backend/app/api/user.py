@@ -298,7 +298,7 @@ def reprocess_company(company_id: int, db: Session = Depends(get_db)):
         # 4. Call the external AI processing service
         api_response = requests.post(
             "http://3.88.145.160:8002/process_company_by_reg_number",
-            json={"registration_number": registration_number}
+            json={"registration_id": registration_number}
         )
         print(f"API response for {company.company_name}: {api_response.status_code}")
         if api_response.status_code == 200:
