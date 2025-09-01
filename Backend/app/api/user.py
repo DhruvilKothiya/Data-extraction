@@ -298,7 +298,7 @@ def reprocess_company(company_id: int, db: Session = Depends(get_db)):
     try:
         # 4. Call the external AI processing service
         api_response = requests.post(
-            "https://03cc2a648b4e.ngrok-free.app/process_company_by_reg_number",
+            "https://3.88.145.160:8002/process_company_by_reg_number",
             json={"registration_number": registration_number}
         )
         print(f"API response for {company.company_name}: {api_response.status_code}")
