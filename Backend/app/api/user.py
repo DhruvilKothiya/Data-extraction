@@ -272,19 +272,16 @@ def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=f"Failed to process file: {str(e)}")
 
 @router.post("/reprocess-company/{company_id}")
-def reprocess_company(company_id: int, request: ReprocessRequest, db: Session = Depends(get_db)):
-    
-    registration_number = request.registration_number
+def reprocess_company(company_id: int, db: Session = Depends(get_db)):
     # 1. Get the company instance
     company = db.query(CompanyData).filter(CompanyData.id == company_id).first()
     if not company:
         raise HTTPException(status_code=404, detail="Company not found")
 
-    
+    # 2. Get key financial data
     key_data = db.query(KeyFinancialData).filter(
         KeyFinancialData.id == company.key_financial_data_id
     ).first()
-
 
     if not key_data:
         raise HTTPException(status_code=404, detail="Key financial data not found for this company")
@@ -332,12 +329,11 @@ def reprocess_company(company_id: int, request: ReprocessRequest, db: Session = 
 
     db.commit()
 
-    #  Return both message and new_status for frontend
+    # Return both message and new_status for frontend
     return {
         "message": f"Company reprocessed with status {company.status}",
         "new_status": company.status
     }
-
 @router.get("/key-financial-data/{company_id}")
 def get_key_financial_data(company_id: int, db: Session = Depends(get_db)):
     company = db.query(CompanyData).filter(CompanyData.id == company_id).first()

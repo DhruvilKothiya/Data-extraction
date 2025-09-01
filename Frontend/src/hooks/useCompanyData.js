@@ -36,14 +36,14 @@ export const useCompanyData = () => {
     }
   };
 
-  const handleRerunAI = async (companyId, registrationNumber) => {
+  const handleRerunAI = async (companyId) => {
     try {
       setRerunLoading((prev) => ({ ...prev, [companyId]: true }));
       const token = localStorage.getItem("token");
 
       const response = await axios.post(
         `${process.env.REACT_APP_API_URL}/reprocess-company/${companyId}`,
-        { registration_number: registrationNumber }, 
+        {}, // Empty body since registration number is retrieved from DB
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
