@@ -218,7 +218,7 @@ def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
 
             try:
                 api_response = requests.post(
-                    "http://18.212.11.174:8001/process-company",
+                    "http://3.88.145.160:8001/process-company",
                     json={
                         "company": company_name,
                         "address": full_address
