@@ -333,7 +333,10 @@ def reprocess_company(company_id: int, db: Session = Depends(get_db)):
     return {
         "message": f"Company reprocessed with status {company.status}",
         "new_status": company.status
-    }def get_key_financial_data(company_id: int, db: Session = Depends(get_db)):
+    }
+
+@router.get("/key-financial-data/{company_id}")
+def get_key_financial_data(company_id: int, db: Session = Depends(get_db)):
     company = db.query(CompanyData).filter(CompanyData.id == company_id).first()
 
     if not company:
