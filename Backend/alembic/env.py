@@ -8,6 +8,7 @@ from app.models.key_financial_data import KeyFinancialData
 from app.models.people_data import PeopleData
 from app.models.summary import SummaryNotes
 from app.models.company_pdfs import CompanyPDFs
+from app.models.company_charges import CompanyCharges
 from app.db.base import Base  # SQLAlchemy Base
 from app.core.config import DATABASE_URL 
 
