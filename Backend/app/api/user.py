@@ -218,7 +218,7 @@ def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
 
             try:
                 api_response = requests.post(
-                    "http://3.88.145.160:8001/process-company",
+                    "http://23.21.235.191:8001/process-company",
                     json={
                         "company": company_name,
                         "address": full_address
@@ -297,7 +297,7 @@ def reprocess_company(company_id: int, db: Session = Depends(get_db)):
     try:
         # 4. Call the external AI processing service
         api_response = requests.post(
-            "http://3.88.145.160:8002/process_company_by_reg_number",
+            "http://23.21.235.191:8002/process_company_by_reg_number",
             json={"registration_id": registration_number}
         )
         print(f"API response for {company.company_name}: {api_response.status_code}")
