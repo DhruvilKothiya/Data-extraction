@@ -745,16 +745,38 @@ def update_registration_number(company_id: int, data: dict = Body(...), db: Sess
     if not company:
         raise HTTPException(status_code=404, detail="Company not found")
 
-    key_data = db.query(KeyFinancialData).filter(KeyFinancialData.id == company.key_financial_data_id).first()
-    if not key_data:
+    old_key_data = (
+        db.query(KeyFinancialData)
+        .filter(KeyFinancialData.id == company.key_financial_data_id)
+        .first()
+    )
+    if not old_key_data:
         raise HTTPException(status_code=404, detail="Key financial data not found")
 
-    key_data.company_registered_number = new_number
-    key_data.company_status = "Active" if new_number else "Inactive"
-
+    # 1. Create new entry with updated registration number
+    new_key_data = KeyFinancialData(
+        company_registered_number=new_number,
+        company_name=old_key_data.company_name,
+        # leave other fields empty
+    )
+    db.add(new_key_data)
     db.commit()
-    return {"message": "Registration number updated successfully"}
+    db.refresh(new_key_data)
 
+    # 2. Update company to point to the new key_data
+    company.key_financial_data_id = new_key_data.id
+    company.company_status = "Active" if new_number else "Inactive"
+    db.commit()
+
+    # 3. Delete old key data
+    db.delete(old_key_data)
+    db.commit()
+
+    return {
+        "message": "Registration number updated successfully",
+        "new_registration_number": new_number,
+    }
+    
 @router.put("/update-approval-stage/{company_id}")
 def update_approval_stage(company_id: int, data: dict = Body(...), db: Session = Depends(get_db)):
     new_stage = data.get("approval_stage")
