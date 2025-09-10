@@ -68,7 +68,7 @@ export const useCompanyData = () => {
   const handleRegistrationUpdate = async (companyId, newNumber) => {
     try {
       const token = localStorage.getItem("token");
-      await axios.put(
+      const response = await axios.put(
         `${process.env.REACT_APP_API_URL}/update-registration-number/${companyId}`,
         { registration_number: newNumber },
         { headers: { Authorization: `Bearer ${token}` } }
@@ -77,7 +77,12 @@ export const useCompanyData = () => {
       setCompanyData((prev) =>
         prev.map((company) =>
           company.id === companyId
-            ? { ...company, registration_number: newNumber }
+            ? {
+                ...company,
+                registration_number: response.data.new_registration_number,
+                company_status: newNumber ? "Active" : "Inactive",
+                key_financial_data: {}, 
+              }
             : company
         )
       );
