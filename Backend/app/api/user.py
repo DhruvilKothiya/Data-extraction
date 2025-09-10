@@ -279,11 +279,11 @@ def reprocess_company(company_id: int, db: Session = Depends(get_db)):
     if not company:
         raise HTTPException(status_code=404, detail="Company not found")
 
-    # 2. Get key financial data
-    key_data = db.query(KeyFinancialData).filter(
-        KeyFinancialData.id == company.key_financial_data_id
-    ).first()
-
+    key_data = (
+        db.query(KeyFinancialData)
+        .filter(KeyFinancialData.id == company.key_financial_data_id)
+        .first()
+    )
     if not key_data:
         raise HTTPException(status_code=404, detail="Key financial data not found for this company")
 
@@ -318,7 +318,9 @@ def reprocess_company(company_id: int, db: Session = Depends(get_db)):
                 # Add more fields as needed
 
                 db.commit()
-
+                company.company_status = "Active"   
+            else:
+                company.company_status = "Inactive" 
             company.status = "Done"
         else:
             company.status = "Not Started"
