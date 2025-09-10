@@ -20,6 +20,7 @@ from app.models.company import CompanyData
 from app.models.people_data import PeopleData
 from app.models.summary import SummaryNotes
 from app.models.company_pdfs import CompanyPDFs
+from app.models.company_charges import CompanyCharges
 from app.models.key_financial_data import KeyFinancialData
 from typing import List,Optional
 import shutil
@@ -397,6 +398,8 @@ def export_selected_key_financial_data(
     include_key = data.get("key_financial", False)
     include_people = data.get("people_data", False)
     include_summary = data.get("summary_notes", False)
+    include_charges = data.get("company_charges", False)
+
 
     companies = db.query(CompanyData).filter(CompanyData.id.in_(ids)).all()
     if not companies:
@@ -591,6 +594,56 @@ def export_selected_key_financial_data(
                 "Summary Notes"
             ])
     
+    # Prepare Company Charges Data
+    charges_df = None
+    if include_charges:
+        # 1. Get registered numbers for selected companies
+        registered_numbers = []
+        for company in companies:
+            if company.key_financial_data_id and company.key_financial_data_id in key_data_by_id:
+                key_data = key_data_by_id[company.key_financial_data_id]
+                if key_data.company_registered_number:
+                    registered_numbers.append(key_data.company_registered_number)
+
+        # 2. Fetch charges data by registered number
+        charges_data = []
+        if registered_numbers:
+            charges_data = (
+                db.query(CompanyCharges)
+                .filter(CompanyCharges.company_registered_number.in_(registered_numbers))
+                .all()
+            )
+
+        # 3. Map registered numbers to company names
+        company_map = {}
+        for company in companies:
+            if company.key_financial_data_id and company.key_financial_data_id in key_data_by_id:
+                key_data = key_data_by_id[company.key_financial_data_id]
+                if key_data.company_registered_number:
+                    company_map[key_data.company_registered_number] = company.company_name
+
+        # 4. Build export rows
+        charges_rows = []
+        for charge in charges_data:
+            company_name = company_map.get(charge.company_registered_number, "Unknown Company")
+            charges_rows.append({
+                "Company Name": company_name,
+                "Company Registration Number": charge.company_registered_number,
+                "Total Charges": charge.total_charges,
+                "Charges": charge.charges  
+            })
+
+        # Create DataFrame even if no data (will have headers)
+        if charges_rows:
+            charges_df = pd.DataFrame(charges_rows)
+        else:
+            charges_df = pd.DataFrame(columns=[
+                "Company Name",
+                "Company Registration Number",
+                "Total Charges",
+                "Charges"
+            ])
+
     # Write to Excel in memory
     output = BytesIO()
     with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
@@ -650,7 +703,31 @@ def export_selected_key_financial_data(
                 column_length = max(summary_df[column].astype(str).map(len).max(), len(column))
                 col_idx = summary_df.columns.get_loc(column)
                 summary_worksheet.set_column(col_idx, col_idx, min(column_length + 2, 50))
+        # Company Charges sheet (always include if requested, even if empty)
+        # Charges data sheet
+        if charges_df is not None:
+            charges_df.to_excel(writer, sheet_name="Company Charges", index=False)
 
+            workbook = writer.book
+            charges_worksheet = writer.sheets['Company Charges']
+
+            header_format = workbook.add_format({
+                'bold': True,
+                'text_wrap': True,
+                'valign': 'top',
+                'fg_color': '#CCE5FF',
+                'border': 1
+            })
+
+            # Apply header formatting
+            for col_num, value in enumerate(charges_df.columns.values):
+                charges_worksheet.write(0, col_num, value, header_format)
+
+            # Auto-adjust column widths
+            for column in charges_df:
+                column_length = max(charges_df[column].astype(str).map(len).max(), len(column))
+                col_idx = charges_df.columns.get_loc(column)
+                charges_worksheet.set_column(col_idx, col_idx, min(column_length + 2, 50))
     output.seek(0)
     return StreamingResponse(
         output,
