@@ -22,7 +22,9 @@ const ExportDialog = ({
   setIncludePeopleData,
   includeSummaryNotes,
   setIncludeSummaryNotes,
-  isSmall
+  isSmall,
+  includeCompanyCharges,
+  setIncludeCompanyCharges
 }) => {
   return (
     <Dialog
@@ -68,6 +70,7 @@ const ExportDialog = ({
               </Typography>
             }
           />
+
           <FormControlLabel
             control={
               <Checkbox
@@ -79,6 +82,21 @@ const ExportDialog = ({
             label={
               <Typography sx={{ fontSize: { xs: '0.8rem', sm: '1rem' } }}>
                 Include Summary Notes
+              </Typography>
+            }
+          />
+          
+          <FormControlLabel
+            control={
+              <Checkbox
+                size={isSmall ? "small" : "medium"}
+                checked={includeCompanyCharges}
+                onChange={(e) => setIncludeCompanyCharges(e.target.checked)}
+              />
+            }
+            label={
+              <Typography sx={{ fontSize: { xs: '0.8rem', sm: '1rem' } }}>
+                Include Company Charges
               </Typography>
             }
           />

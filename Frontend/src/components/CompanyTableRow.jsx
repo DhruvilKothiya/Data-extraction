@@ -39,7 +39,7 @@ const CompanyTableRow = ({
   const [schemeDialogOpen, setSchemeDialogOpen] = useState(false);
   const [summaryDialogOpen, setSummaryDialogOpen] = useState(false);
 
-  const isInactive = company.company_status === "Inactive"; // ✅ new helper variable
+  const isInactive = company.company_status === "Inactive"; 
 
   const currentRegistrationValue =
     editedRegistrations[company.id] ?? company.registration_number ?? "";

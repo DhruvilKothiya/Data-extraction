@@ -5,9 +5,10 @@ import { toast } from 'react-toastify';
 
 export const useExport = () => {
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
-  const [includeKeyData, setIncludeKeyData] = useState(true);
+  const [includeKeyData, setIncludeKeyData] = useState(false);
   const [includePeopleData, setIncludePeopleData] = useState(false);
   const [includeSummaryNotes, setIncludeSummaryNotes] = useState(false);
+  const [includeCompanyCharges, setIncludeCompanyCharges] = useState(false);
 
   const openExportDialog = () => setExportDialogOpen(true);
   const closeExportDialog = () => setExportDialogOpen(false);
@@ -25,6 +26,7 @@ export const useExport = () => {
           key_financial: includeKeyData,
           people_data: includePeopleData,
           summary_notes: includeSummaryNotes,
+          company_charges: includeCompanyCharges,
         },
         {
           headers: {
@@ -59,9 +61,11 @@ export const useExport = () => {
     includeKeyData,
     includePeopleData,
     includeSummaryNotes,
+    includeCompanyCharges,
     setIncludeKeyData,
     setIncludePeopleData,
     setIncludeSummaryNotes,
+    setIncludeCompanyCharges,
     openExportDialog,
     closeExportDialog,
     handleExport,

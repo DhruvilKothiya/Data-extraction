@@ -65,9 +65,11 @@ const HomePage = () => {
     includeKeyData,
     includePeopleData,
     includeSummaryNotes,
+    includeCompanyCharges,
     setIncludeKeyData,
     setIncludePeopleData,
     setIncludeSummaryNotes,
+    setIncludeCompanyCharges,
     openExportDialog,
     closeExportDialog,
     handleExport,
@@ -241,6 +243,8 @@ const HomePage = () => {
                 setIncludePeopleData={setIncludePeopleData}
                 includeSummaryNotes={includeSummaryNotes}
                 setIncludeSummaryNotes={setIncludeSummaryNotes}
+                includeCompanyCharges={includeCompanyCharges}
+                setIncludeCompanyCharges={setIncludeCompanyCharges}
                 isSmall={isSmall}
               />
             </CardContent>
