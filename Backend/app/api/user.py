@@ -415,17 +415,33 @@ def export_selected_key_financial_data(
     key_data_by_id = {k.id: k for k in key_data_list}
 
     # Prepare main data
+# Prepare main data
     main_rows = []
     for company in companies:
+        # Get key financial data for this company
+        d = key_data_by_id.get(company.key_financial_data_id) if company.key_financial_data_id else None
+        
+        # Combine the three status fields for Type of Scheme
+        type_of_scheme_parts = []
+        if d:
+            if d.Status_of_Defined_Benefit_Arrangement_1:
+                type_of_scheme_parts.append(d.Status_of_Defined_Benefit_Arrangement_1)
+            if d.Status_of_Defined_Benefit_Arrangement_2:
+                type_of_scheme_parts.append(d.Status_of_Defined_Benefit_Arrangement_2)
+            if d.Status_of_Defined_Benefit_Arrangement_3:
+                type_of_scheme_parts.append(d.Status_of_Defined_Benefit_Arrangement_3)
+        
+        # Join the parts with a separator (e.g., comma and space)
+        type_of_scheme = ", ".join(type_of_scheme_parts) if type_of_scheme_parts else "Defined Benefit"
+        
         row = {
             "Company Name": company.company_name,
             "Approval Status": company.approval_stage,
             "Status Code": company.status,
-            "Type of Scheme": "Defined Benefit"
+            "Type of Scheme": type_of_scheme
         }
 
         if include_key:
-            d = key_data_by_id.get(company.key_financial_data_id)
             turnover = extract_year_values(d.turnover_data, ['2020', '2019']) if d else {}
             profit = extract_year_values(d.profit_data, ['2020', '2019']) if d else {}
             fair_value = extract_year_values(d.fair_value_assets, ['2020', '2019']) if d else {}
