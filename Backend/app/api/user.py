@@ -6,6 +6,7 @@ from fastapi.responses import StreamingResponse
 import pandas as pd
 from io import BytesIO
 from decouple import config 
+from app.core.config import REPROCESS_COMPANY_API,PROCESS_COMPANY_API
 from fastapi import APIRouter, Depends, HTTPException,Request,File, UploadFile,Response
 from sqlalchemy.orm import Session
 from app.db.session import SessionLocal
@@ -219,7 +220,7 @@ def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
 
             try:
                 api_response = requests.post(
-                    "http://3.135.42.125:8001/process-company",
+                    PROCESS_COMPANY_API,
                     json={
                         "company": company_name,
                         "address": full_address
@@ -298,7 +299,7 @@ def reprocess_company(company_id: int, db: Session = Depends(get_db)):
     try:
         # 4. Call the external AI processing service
         api_response = requests.post(
-            "http://3.135.42.125:8002/process_company_by_reg_number",
+           REPROCESS_COMPANY_API,
             json={"registration_id": registration_number}
         )
         print(f"API response for {company.company_name}: {api_response.status_code}")
@@ -321,7 +322,7 @@ def reprocess_company(company_id: int, db: Session = Depends(get_db)):
                 company.company_status = "Active"   
             else:
                 company.company_status = "Inactive" 
-            company.status = "Done"
+            company.status = "Done
         else:
             company.status = "Not Started"
             print(f"API failed for {company.company_name}: {api_response.status_code}")
