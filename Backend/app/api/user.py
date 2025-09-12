@@ -322,7 +322,7 @@ def reprocess_company(company_id: int, db: Session = Depends(get_db)):
                 company.company_status = "Active"   
             else:
                 company.company_status = "Inactive" 
-            company.status = "Done
+            company.status = "Done"
         else:
             company.status = "Not Started"
             print(f"API failed for {company.company_name}: {api_response.status_code}")
