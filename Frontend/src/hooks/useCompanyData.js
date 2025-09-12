@@ -177,8 +177,13 @@ export const useCompanyData = () => {
   const handleCustomSelect = (option, paginatedCompanies) => {
     setCompanyData((prev) =>
       prev.map((company) => {
-        if (!paginatedCompanies.some((c) => c.id === company.id))
+        // Only consider active companies
+        if (
+          company.company_status !== "Active" ||
+          !paginatedCompanies.some((c) => c.id === company.id)
+        ) {
           return company;
+        }
 
         const isMatch =
           option === "all" ||
