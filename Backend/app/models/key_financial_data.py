@@ -53,3 +53,7 @@ class KeyFinancialData(Base):
     assets_ldi = Column(Numeric(20, 2), nullable=True)
     assets_cash = Column(Numeric(20, 2), nullable=True)
     assets_other = Column(Numeric(20, 2), nullable=True)
+    assets_diversified_growth = Column(Numeric(20, 2), nullable=True)
+    assets_alternatives = Column(Numeric(20, 2), nullable=True)
+    assets_insurance_contracts = Column(Numeric(20, 2), nullable=True)
+    
