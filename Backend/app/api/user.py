@@ -498,7 +498,10 @@ def export_selected_key_financial_data(
                     "Real Estate": d.assets_real_estate,
                     "LDI": d.assets_ldi,
                     "Cash": d.assets_cash,
-                    "Other Assets": d.assets_other
+                    "Other Assets": d.assets_other,
+                    "Diversified Growth": d.assets_diversified_growth,
+                    "Alternatives": d.assets_alternatives,
+                    "Insurance Contracts": d.assets_insurance_contracts,
                 })
 
         main_rows.append(row)
