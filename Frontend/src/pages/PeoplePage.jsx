@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
-import Sidebar from "../components/Sidebar";
+// import Sidebar from "../components/Sidebar";
 import {
   Box,
   Button,
@@ -57,7 +57,7 @@ const PeoplePage = () => {
   const companyName = location.state?.companyName || "Unknown Company";
 
   // Responsive sidebar width
-  const sidebarWidth = isMobile ? 0 : isTablet ? 240 : 280;
+  // const sidebarWidth = isMobile ? 0 : isTablet ? 240 : 280;
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -124,12 +124,13 @@ const PeoplePage = () => {
 
   return (
     <Box sx={{ display: "flex", minHeight: "100vh" }}>
-      <Sidebar mobileOpen={mobileOpen} onDrawerToggle={handleDrawerToggle} />
+      {/* , md: `${sidebarWidth}px` */}
+      {/* <Sidebar mobileOpen={mobileOpen} onDrawerToggle={handleDrawerToggle} /> */}
 
       <Box
         sx={{
           flexGrow: 1,
-          ml: { xs: 0, md: `${sidebarWidth}px` },
+          ml: { xs: 0 },
           display: "flex",
           flexDirection: "column",
         }}

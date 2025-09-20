@@ -76,11 +76,11 @@ const HomePage = () => {
   } = useExport();
 
   // Computed values
-  const sidebarWidth = isMobile 
-    ? RESPONSIVE_BREAKPOINTS.SIDEBAR_WIDTH_MOBILE 
-    : isTablet 
-    ? RESPONSIVE_BREAKPOINTS.SIDEBAR_WIDTH_TABLET 
-    : RESPONSIVE_BREAKPOINTS.SIDEBAR_WIDTH_DESKTOP;
+  // const sidebarWidth = isMobile
+  //   ? RESPONSIVE_BREAKPOINTS.SIDEBAR_WIDTH_MOBILE
+  //   : isTablet
+  //   ? RESPONSIVE_BREAKPOINTS.SIDEBAR_WIDTH_TABLET
+  //   : RESPONSIVE_BREAKPOINTS.SIDEBAR_WIDTH_DESKTOP;
 
   const filteredCompanies = filterCompanies(companyData, searchTerm, approvalFilter);
   const paginatedCompanies = paginateCompanies(filteredCompanies);
@@ -130,7 +130,7 @@ const HomePage = () => {
         <Box
           sx={{
             flexGrow: 1,
-            ml: { xs: 0, md: `${sidebarWidth}px` },
+            ml: { xs: 0},
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
@@ -143,13 +143,14 @@ const HomePage = () => {
   }
 
   return (
-    <Box sx={{ display: "flex", width: '100%' }}>
-      <Sidebar mobileOpen={mobileOpen} onDrawerToggle={handleDrawerToggle} />
+    <Box sx={{ display: "flex", width: "100%" }}>
+      {/* , md: `${sidebarWidth}px`  */}
+      {/* <Sidebar mobileOpen={mobileOpen} onDrawerToggle={handleDrawerToggle} /> */}
 
       <Box
         sx={{
           flexGrow: 1,
-          ml: { xs: 0, md: `${sidebarWidth}px` },
+          ml: { xs: 0},
           display: "flex",
           width: '100%',
           flexDirection: "column",
