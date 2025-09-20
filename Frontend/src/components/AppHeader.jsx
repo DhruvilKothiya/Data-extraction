@@ -59,7 +59,7 @@ const AppHeader = ({
           noWrap
           sx={{ fontWeight: "bold", maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis' }}
         >
-          Company
+          Corporate and Pensions Information
         </Typography>
       </Box>
       <Box sx={{ display: "flex", gap: { xs: 1, sm: 2 }, flexShrink: 0 }}>
