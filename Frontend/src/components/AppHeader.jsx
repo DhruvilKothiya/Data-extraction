@@ -63,11 +63,6 @@ const AppHeader = ({
         </Typography>
       </Box>
       <Box sx={{ display: "flex", gap: { xs: 1, sm: 2 }, flexShrink: 0 }}>
-        <IconButton size={isSmall ? "small" : "medium"}>
-          <Badge badgeContent={2} color="error">
-            <NotificationsIcon />
-          </Badge>
-        </IconButton>
         <IconButton onClick={onProfileMenuOpen} size={isSmall ? "small" : "medium"}>
           <Avatar sx={{ width: { xs: 28, sm: 32 }, height: { xs: 28, sm: 32 } }}>
             <PersonIcon />
