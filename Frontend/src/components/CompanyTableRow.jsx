@@ -39,7 +39,7 @@ const CompanyTableRow = ({
   const [schemeDialogOpen, setSchemeDialogOpen] = useState(false);
   const [summaryDialogOpen, setSummaryDialogOpen] = useState(false);
 
-  const isInactive = company.company_status === "Inactive"; 
+  const isInactive = company.company_status === "Inactive";
 
   const currentRegistrationValue =
     editedRegistrations[company.id] ?? company.registration_number ?? "";
@@ -50,9 +50,12 @@ const CompanyTableRow = ({
     const validYears = Object.keys(data)
       .filter((year) => {
         const value = data[year];
-        return value !== null && value !== 0 && 
-          (typeof value !== 'object' || 
-           (value !== null && Object.keys(value).length > 0));
+        return (
+          value !== null &&
+          value !== 0 &&
+          (typeof value !== "object" ||
+            (value !== null && Object.keys(value).length > 0))
+        );
       })
       .sort()
       .reverse();
@@ -63,11 +66,11 @@ const CompanyTableRow = ({
     const latestValue = data[latestYear];
     let displayValue;
 
-    if (latestValue !== null && typeof latestValue === 'object') {
+    if (latestValue !== null && typeof latestValue === "object") {
       // If the value is an object, create a string representation
       displayValue = Object.entries(latestValue)
         .map(([key, val]) => `${key}: ${val}`)
-        .join(', ');
+        .join(", ");
     } else {
       displayValue = latestValue;
     }
@@ -84,7 +87,6 @@ const CompanyTableRow = ({
           <Button
             size="small"
             onClick={() => onOpenDetail(company, type)}
-            disabled={isInactive} // disable if inactive
             sx={{ fontSize: "0.7rem", p: 0.5 }}
           >
             More
@@ -176,20 +178,37 @@ const CompanyTableRow = ({
       <TableRow
         key={company.id}
         sx={{
-          opacity: isInactive ? 0.5 : 1,
-          pointerEvents: isInactive ? "none" : "auto",
+          opacity: isInactive ? 0.85 : 1,
+          pointerEvents: "auto",
         }}
       >
-        <TableCell padding="checkbox">
+        {/* Sticky Checkbox Column */}
+        <TableCell
+          padding="checkbox"
+          sx={{
+            position: "sticky",
+            left: 0,
+            zIndex: 1,
+            backgroundColor: "background.paper",
+          }}
+        >
           <Checkbox
             size={isSmall ? "small" : "medium"}
             checked={company.selected}
             onChange={() => onSelect(company.id)}
-            disabled={isInactive}
+            disabled={false}
           />
         </TableCell>
 
-        <TableCell>
+        {/* Sticky Company Name Column */}
+        <TableCell
+          sx={{
+            position: "sticky",
+            left: 80,
+            zIndex: 3,
+            backgroundColor: "background.paper",
+          }}
+        >
           <Typography
             variant="body2"
             sx={{
@@ -215,16 +234,21 @@ const CompanyTableRow = ({
 
         <TableCell>
           <Box
-            sx={{ display: "flex", alignItems: "center", gap: 1, minWidth: 120 }}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+              minWidth: 120,
+            }}
           >
             <TextField
               size="small"
               value={currentRegistrationValue}
               onChange={(e) => onRegistrationChange(company.id, e.target.value)}
               variant="standard"
-              disabled={isInactive || company.approval_stage === 1}
+              disabled={company.approval_stage === 1}
               InputProps={{
-                readOnly: isInactive || company.approval_stage === 1,
+                readOnly: company.approval_stage === 1,
               }}
               sx={{
                 "& .MuiInputBase-input": {
@@ -233,7 +257,8 @@ const CompanyTableRow = ({
                   fontWeight: company.approval_stage === 1 ? "bold" : "normal",
                 },
                 "& .MuiInput-root:before": {
-                  borderBottom: company.approval_stage === 1 ? "none" : "inherit",
+                  borderBottom:
+                    company.approval_stage === 1 ? "none" : "inherit",
                 },
                 "& .Mui-disabled": {
                   "-webkit-text-fill-color": "inherit",
@@ -247,7 +272,7 @@ const CompanyTableRow = ({
           <IconButton
             color="primary"
             onClick={() => onRerunAI(company.id)}
-            disabled={isInactive || rerunLoading[company.id]}
+            disabled={rerunLoading[company.id]}
             size={isSmall ? "small" : "medium"}
           >
             {rerunLoading[company.id] ? (
@@ -275,7 +300,6 @@ const CompanyTableRow = ({
             size="small"
             variant="outlined"
             onClick={() => onNavigate(`/company/${company.id}/financial-data`)}
-            disabled={isInactive}
             sx={{ fontSize: { xs: "0.7rem", sm: "0.8rem" } }}
           >
             View
@@ -285,7 +309,7 @@ const CompanyTableRow = ({
           <TableCell>
             <PDFLinksCell
               pdfLinks={company.pdf_links || []}
-              disabled={isInactive}
+              disabled={false}
             />
           </TableCell>
         )}
@@ -304,7 +328,6 @@ const CompanyTableRow = ({
                     },
                   })
                 }
-                disabled={isInactive}
                 sx={{ fontSize: { xs: "0.7rem", sm: "0.8rem" } }}
               >
                 View
@@ -315,7 +338,6 @@ const CompanyTableRow = ({
                 size="small"
                 variant="outlined"
                 onClick={() => setSummaryDialogOpen(true)}
-                disabled={isInactive}
                 sx={{ fontSize: { xs: "0.7rem", sm: "0.8rem" } }}
               >
                 View Summary
@@ -339,7 +361,6 @@ const CompanyTableRow = ({
                   <IconButton
                     size="small"
                     onClick={handleSchemeTypeClick}
-                    disabled={isInactive}
                     sx={{
                       color: "#2e7d32",
                       backgroundColor: "rgba(46, 125, 50, 0.1)",
@@ -349,9 +370,9 @@ const CompanyTableRow = ({
                       "&:hover": {
                         backgroundColor: "#2e7d32",
                         color: "white",
-                        transform: "scale(1.05)"
+                        transform: "scale(1.05)",
                       },
-                      transition: "all 0.2s ease"
+                      transition: "all 0.2s ease",
                     }}
                     title="View Defined Benefit Arrangements"
                   >
@@ -368,11 +389,14 @@ const CompanyTableRow = ({
                       borderRadius: "8px",
                       backgroundColor: "rgba(158, 158, 158, 0.1)",
                       border: "1px solid rgba(158, 158, 158, 0.3)",
-                      color: "text.disabled"
+                      color: "text.disabled",
                     }}
                     title="No scheme data available"
                   >
-                    <Typography variant="body2" sx={{ fontSize: "0.7rem", fontWeight: "bold" }}>
+                    <Typography
+                      variant="body2"
+                      sx={{ fontSize: "0.7rem", fontWeight: "bold" }}
+                    >
                       -
                     </Typography>
                   </Box>
@@ -396,7 +420,9 @@ const CompanyTableRow = ({
               select
               size="small"
               value={company.approval_stage}
-              onChange={(e) => onApprovalChange(company.id, parseInt(e.target.value))}
+              onChange={(e) =>
+                onApprovalChange(company.id, parseInt(e.target.value))
+              }
               disabled={isInactive}
               variant="standard"
               sx={{
@@ -419,7 +445,9 @@ const CompanyTableRow = ({
                 fontStyle: "italic",
               }}
             >
-              {company.status === "Processing" ? "Processing..." : "Not started"}
+              {company.status === "Processing"
+                ? "Processing..."
+                : "Not started"}
             </Typography>
           )}
         </TableCell>

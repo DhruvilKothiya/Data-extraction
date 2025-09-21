@@ -1,9 +1,17 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useTheme, useMediaQuery, Box, Container, Card, CardContent, CircularProgress } from "@mui/material";
+import {
+  useTheme,
+  useMediaQuery,
+  Box,
+  Container,
+  Card,
+  CardContent,
+  CircularProgress,
+} from "@mui/material";
 
 // Components
-import Sidebar from "../components/Sidebar";
+// import Sidebar from "../components/Sidebar";
 import AppHeader from "../components/AppHeader";
 import FileUploadSection from "../components/FileUploadSection";
 import CompanyTableControls from "../components/CompanyTableControls";
@@ -18,13 +26,13 @@ import { useExport } from "../hooks/useExport";
 
 // Utils
 import { filterCompanies, paginateCompanies } from "../utils/companyFilters";
-import { RESPONSIVE_BREAKPOINTS } from "../utils/constants";
+// import { RESPONSIVE_BREAKPOINTS } from "../utils/constants";
 
 const HomePage = () => {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const isTablet = useMediaQuery(theme.breakpoints.down('lg'));
-  const isSmall = useMediaQuery(theme.breakpoints.down('sm'));
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const isTablet = useMediaQuery(theme.breakpoints.down("lg"));
+  const isSmall = useMediaQuery(theme.breakpoints.down("sm"));
   const navigate = useNavigate();
 
   // State
@@ -82,16 +90,22 @@ const HomePage = () => {
   //   ? RESPONSIVE_BREAKPOINTS.SIDEBAR_WIDTH_TABLET
   //   : RESPONSIVE_BREAKPOINTS.SIDEBAR_WIDTH_DESKTOP;
 
-  const filteredCompanies = filterCompanies(companyData, searchTerm, approvalFilter);
+  const filteredCompanies = filterCompanies(
+    companyData,
+    searchTerm,
+    approvalFilter
+  );
   const paginatedCompanies = paginateCompanies(filteredCompanies);
-  const hasSelectedCompanies = companyData.some(c => c.selected);
+  const hasSelectedCompanies = companyData.some((c) => c.selected);
   const isMenuOpen = Boolean(dropdownAnchorEl);
 
   // Event handlers
   const handleDrawerToggle = () => setMobileOpen(!mobileOpen);
   const handleSearch = (event) => setSearchTerm(event.target.value);
-  const handleApprovalFilterChange = (event) => setApprovalFilter(event.target.value);
-  const handleProfileMenuOpen = (event) => setProfileAnchorEl(event.currentTarget);
+  const handleApprovalFilterChange = (event) =>
+    setApprovalFilter(event.target.value);
+  const handleProfileMenuOpen = (event) =>
+    setProfileAnchorEl(event.currentTarget);
   const handleProfileMenuClose = () => setProfileAnchorEl(null);
   const handleMenuClick = (event) => setDropdownAnchorEl(event.currentTarget);
   const handleMenuClose = () => setDropdownAnchorEl(null);
@@ -125,8 +139,16 @@ const HomePage = () => {
   // Show loading state until data is loaded
   if (!dataLoaded) {
     return (
-      <Box sx={{ display: "flex", minHeight: "100vh", width: '100%', overflowX: 'hidden' }}>
-        <Sidebar mobileOpen={mobileOpen} onDrawerToggle={handleDrawerToggle} />
+      <Box
+        sx={{
+          display: "flex",
+          minHeight: "100vh",
+          width: "100%",
+          overflowX: "hidden",
+        }}
+      >
+         {/* md: `${sidebarWidth}px` */}
+        {/* <Sidebar mobileOpen={mobileOpen} onDrawerToggle={handleDrawerToggle} /> */}
         <Box
           sx={{
             flexGrow: 1,
@@ -152,7 +174,7 @@ const HomePage = () => {
           flexGrow: 1,
           ml: { xs: 0},
           display: "flex",
-          width: '100%',
+          width: "100%",
           flexDirection: "column",
           minWidth: 0,
         }}
@@ -169,6 +191,26 @@ const HomePage = () => {
         />
 
         {/* Main Content */}
+        <Box
+          sx={{
+            position: "sticky",
+            top: { xs: 58, sm: 64, md: 75 },
+            zIndex: 1000,
+            backgroundColor: "background.paper",
+            px: { xs: 1, sm: 2, md: 3 },
+            pt: { xs: 1, sm: 2 },
+          }}
+        >
+          <FileUploadSection
+            uploading={uploading}
+            uploadProgress={uploadProgress}
+            uploadedFileName={uploadedFileName}
+            onFileUpload={handleCSVUpload}
+            onFileNameChange={setUploadedFileName}
+            isSmall={isSmall}
+          />
+        </Box>
+
         <Container
           maxWidth="xl"
           disableGutters={isSmall}
@@ -176,22 +218,14 @@ const HomePage = () => {
             mt: { xs: 2, sm: 4 },
             flex: 1,
             px: { xs: 1, sm: 2, md: 3 },
-            maxWidth: { xs: '100%', lg: '1430px' },
-            width: '100%',
+            maxWidth: { xs: "100%", lg: "1430px" },
+            width: "100%",
             mx: "auto",
           }}
         >
           <Card sx={{ borderRadius: 2, boxShadow: 3 }}>
             <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
               {/* Upload Section */}
-              <FileUploadSection
-                uploading={uploading}
-                uploadProgress={uploadProgress}
-                uploadedFileName={uploadedFileName}
-                onFileUpload={handleCSVUpload}
-                onFileNameChange={setUploadedFileName}
-                isSmall={isSmall}
-              />
 
               {/* Controls Section */}
               <CompanyTableControls

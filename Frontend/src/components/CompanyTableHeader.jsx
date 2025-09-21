@@ -13,7 +13,6 @@ import {
 import { ArrowDropDown as ArrowDropDownIcon } from '@mui/icons-material';
 
 const CompanyTableHeader = ({
-  filteredCompanies,
   isSmall,
   selectAllChecked,
   selectAllIndeterminate,
@@ -27,7 +26,16 @@ const CompanyTableHeader = ({
   return (
     <TableHead>
       <TableRow>
-        <TableCell padding="checkbox">
+        {/* Sticky Checkbox Column */}
+        <TableCell
+          padding="checkbox"
+          sx={{
+            position: "sticky",
+            left: 0,
+            zIndex: 2,
+            backgroundColor: "background.paper",
+          }}
+        >
           <Box sx={{ display: "flex", alignItems: "center" }}>
             <Checkbox
               size={isSmall ? "small" : "medium"}
@@ -79,7 +87,18 @@ const CompanyTableHeader = ({
           </Menu>
         </TableCell>
 
-        <TableCell>Company Name</TableCell>
+        {/* Sticky Company Name Column */}
+        <TableCell
+          sx={{
+            position: "sticky",
+            left: 80, // adjust this width if needed
+            zIndex: 3,
+            backgroundColor: "background.paper",
+          }}
+        >
+          Company Name
+        </TableCell>
+
         <TableCell>Company Status</TableCell>
         <TableCell>Registration Number</TableCell>
         <TableCell>Re-run AI</TableCell>
