@@ -88,10 +88,10 @@ function App() {
             }
           />
           <Route
-            path="/company/:id/people"
+            path="/company/:registeredNumber/people"
             element={
               <PrivateRoute>
-                <PeoplePage/>
+                <PeoplePage />
               </PrivateRoute>
             }
           />

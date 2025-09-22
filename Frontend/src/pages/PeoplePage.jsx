@@ -43,7 +43,7 @@ const PeoplePage = () => {
   const isTablet = useMediaQuery(theme.breakpoints.down("lg"));
   const isSmall = useMediaQuery(theme.breakpoints.down("sm"));
 
-  const { id: companyId } = useParams();
+  const { registeredNumber: companyRegisteredNumber } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -90,37 +90,34 @@ const PeoplePage = () => {
     }
   };
 
-  const fetchPeopleData = async () => {
-    try {
-      const token = localStorage.getItem("token");
-
-      if (!token) {
-        navigate("/signin");
-        return;
-      }
-      const response = await axios.get(
-        `${process.env.REACT_APP_API_URL}/people/${companyId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      console.log("respose", response.data);
-      setPeopleData(response.data);
-    } catch (error) {
-      console.error("Error fetching people data:", error);
-      setError("Failed to fetch people data. Please try again.");
-      toast.error("Failed to fetch people data");
-      setPeopleData([]);
-    } finally {
-      setLoading(false);
+const fetchPeopleData = async () => {
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/signin");
+      return;
     }
-  };
+    const response = await axios.get(
+      `${process.env.REACT_APP_API_URL}/people/${companyRegisteredNumber}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    setPeopleData(response.data);
+  } catch (error) {
+    setError("Failed to fetch people data. Please try again.");
+    toast.error("Failed to fetch people data");
+    setPeopleData([]);
+  } finally {
+    setLoading(false);
+  }
+};
 
-  useEffect(() => {
-    fetchPeopleData();
-  }, [companyId, navigate]);
+useEffect(() => {
+  fetchPeopleData();
+}, [companyRegisteredNumber, navigate]);
 
   return (
     <Box sx={{ display: "flex", minHeight: "100vh" }}>
@@ -260,7 +257,7 @@ const PeoplePage = () => {
                   color="text.secondary"
                   sx={{ fontSize: { xs: "0.8rem", sm: "0.9rem" } }}
                 >
-                  Company ID: {companyId}
+                  Company RegisterNumber: {companyRegisteredNumber}
                 </Typography>
               </Box>
 

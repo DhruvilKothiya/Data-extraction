@@ -321,12 +321,16 @@ const CompanyTableRow = ({
                 size="small"
                 variant="outlined"
                 onClick={() =>
-                  onNavigate(`/company/${company.id}/people`, {
-                    state: {
-                      companyName: company.company_name,
-                      companyId: company.id,
-                    },
-                  })
+                  onNavigate(
+                    `/company/${company.registration_number}/people`,
+                    {
+                      state: {
+                        companyName: company.company_name,
+                        companyRegisteredNumber:
+                          company.registration_number,
+                      },
+                    }
+                  )
                 }
                 sx={{ fontSize: { xs: "0.7rem", sm: "0.8rem" } }}
               >

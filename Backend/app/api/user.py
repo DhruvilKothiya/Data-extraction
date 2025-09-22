@@ -822,55 +822,43 @@ def update_approval_stage(company_id: int, data: dict = Body(...), db: Session =
     }
     
     
-@router.get("/people/{company_id}")
-def get_people_for_company(company_id: int, db: Session = Depends(get_db)):
-    # First, get the company's registered number from KeyFinancialData
-    company_financial = (
+@router.get("/people/{company_registered_number}")
+def get_people_for_company(company_registered_number: str, db: Session = Depends(get_db)):
+
+    # Check if the company exists in key_financial_data table
+    company_exists = (
         db.query(KeyFinancialData)
-        .filter(KeyFinancialData.id == company_id)
+        .filter(KeyFinancialData.company_registered_number == company_registered_number)
         .first()
     )
-    if not company_financial:
+
+    if not company_exists:
         raise HTTPException(status_code=404, detail="Company not found")
 
-    # Get all people for that registered number
+    # If company exists, get all people for that registered number
     people = (
         db.query(PeopleData)
-        .filter(
-            PeopleData.company_registered_number == company_financial.company_registered_number
-        )
+        .filter(PeopleData.company_registered_number == company_registered_number)
         .all()
     )
 
     if not people:
         return []
 
-    # Deduplicate based on all 5 fields
-    seen = set()
-    unique_people = []
-    for person in people:
-        key = (
-            person.name.strip() if person.name else None,
-            person.role.strip() if person.role else None,
-            str(person.appointment_date) if person.appointment_date else None,
-            str(person.date_of_birth) if person.date_of_birth else None,
-            person.company_registered_number.strip() if person.company_registered_number else None
-        )
-        if key not in seen:
-            seen.add(key)
-            unique_people.append(person)
-
-    return [
+    # Return people data
+    result = [
         {
             "id": person.id,
             "name": person.name,
             "role": person.role,
             "appointment_date": person.appointment_date,
             "date_of_birth": person.date_of_birth,
-            "company_registered_number": person.company_registered_number
+            "company_registered_number": person.company_registered_number,
         }
-        for person in unique_people
+        for person in people
     ]
+
+    return result
 
 @router.get("/summary-notes/{company_id}")
 def get_summary_notes(company_id: int, db: Session = Depends(get_db)):
