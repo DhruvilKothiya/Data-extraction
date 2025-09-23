@@ -238,29 +238,7 @@ def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
                         county=row.get("County"),
                     )
                     db.add(csv_record)
-
-                    key_data = db.query(KeyFinancialData).filter(
-                        KeyFinancialData.company_name == company_name
-                    ).first()
-                    if not key_data:
-                        key_data = KeyFinancialData(company_name=company_name)
-                        db.add(key_data)
-                        db.flush()
-
-                    company_data = db.query(CompanyData).filter(
-                        CompanyData.company_name == company_name
-                    ).first()
-                    if not company_data:
-                        company_data = CompanyData(
-                            company_name=company_name,
-                            key_financial_data_id=key_data.id,
-                            status="Done"
-                        )
-                        db.add(company_data)
-                    else:
-                        company_data.status = "Done"
-
-                    db.commit()  # commit after each successful company
+                    db.commit()  # commit each record
 
                 else:
                     print(f"API failed for {company_name}: {api_response.status_code}")
@@ -268,7 +246,7 @@ def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
             except Exception as e:
                 print(f"Error fetching API data for {company_name}: {e}")
 
-        return {"message": "File processed. Companies saved only when API returned 200."}
+        return {"message": "File processed. Data saved in CSVFileData only when API returned 200."}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to process file: {str(e)}")
