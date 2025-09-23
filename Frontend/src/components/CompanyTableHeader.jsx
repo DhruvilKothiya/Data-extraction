@@ -32,7 +32,7 @@ const CompanyTableHeader = ({
           sx={{
             position: "sticky",
             left: 0,
-            zIndex: 2,
+            zIndex: 10,
             backgroundColor: "background.paper",
           }}
         >
@@ -92,7 +92,7 @@ const CompanyTableHeader = ({
           sx={{
             position: "sticky",
             left: 80, // adjust this width if needed
-            zIndex: 3,
+            zIndex: 10,
             backgroundColor: "background.paper",
           }}
         >

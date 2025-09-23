@@ -165,18 +165,17 @@ const HomePage = () => {
   }
 
   return (
-    <Box sx={{ display: "flex", width: "100%" }}>
-      {/* , md: `${sidebarWidth}px`  */}
-      {/* <Sidebar mobileOpen={mobileOpen} onDrawerToggle={handleDrawerToggle} /> */}
-
+    <Box sx={{ display: "flex", width: "100%", height: '100vh', overflow: 'hidden' }}>
       <Box
         sx={{
           flexGrow: 1,
-          ml: { xs: 0},
+          ml: { xs: 0 },
           display: "flex",
           width: "100%",
           flexDirection: "column",
           minWidth: 0,
+          height: '100%',
+          overflow: 'hidden',
         }}
       >
         {/* Header */}
@@ -191,43 +190,34 @@ const HomePage = () => {
         />
 
         {/* Main Content */}
-        <Box
-          sx={{
-            position: "sticky",
-            top: { xs: 58, sm: 64, md: 75 },
-            zIndex: 1000,
-            backgroundColor: "background.paper",
-            px: { xs: 1, sm: 2, md: 3 },
-            pt: { xs: 1, sm: 2 },
-          }}
-        >
-          <FileUploadSection
-            uploading={uploading}
-            uploadProgress={uploadProgress}
-            uploadedFileName={uploadedFileName}
-            onFileUpload={handleCSVUpload}
-            onFileNameChange={setUploadedFileName}
-            isSmall={isSmall}
-          />
-        </Box>
-
-        <Container
-          maxWidth="xl"
-          disableGutters={isSmall}
-          sx={{
-            mt: { xs: 2, sm: 4 },
-            flex: 1,
-            px: { xs: 1, sm: 2, md: 3 },
-            maxWidth: { xs: "100%", lg: "1430px" },
-            width: "100%",
-            mx: "auto",
-          }}
-        >
-          <Card sx={{ borderRadius: 2, boxShadow: 3 }}>
-            <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-              {/* Upload Section */}
-
-              {/* Controls Section */}
+        <Box sx={{ 
+          flex: 1, 
+          display: 'flex', 
+          flexDirection: 'column',
+          overflow: 'hidden',
+          position: 'relative',
+        }}>
+          <Box sx={{ 
+            position: 'sticky',
+            top: 0,
+            zIndex: 1100,
+            backgroundColor: 'background.paper',
+            borderBottom: '1px solid',
+            borderColor: 'divider',
+            px: { xs: 2, sm: 3 },
+            pt: 2,
+            pb: 1,
+          }}>
+            <FileUploadSection
+              uploading={uploading}
+              uploadProgress={uploadProgress}
+              uploadedFileName={uploadedFileName}
+              onFileUpload={handleCSVUpload}
+              onFileNameChange={setUploadedFileName}
+              isSmall={isSmall}
+            />
+            
+            <Box sx={{ mt: 2 }}>
               <CompanyTableControls
                 searchTerm={searchTerm}
                 onSearchChange={handleSearch}
@@ -237,54 +227,80 @@ const HomePage = () => {
                 hasSelectedCompanies={hasSelectedCompanies}
                 isSmall={isSmall}
               />
+            </Box>
+          </Box>
 
-              {/* Table Section */}
-              <CompanyTable
-                paginatedCompanies={paginatedCompanies}
-                filteredCompanies={filteredCompanies}
-                isSmall={isSmall}
-                editedRegistrations={editedRegistrations}
-                rerunLoading={rerunLoading}
-                onSelectAll={toggleSelectAll}
-                onSelectOne={toggleSelectOne}
-                onRegistrationChange={handleRegistrationChange}
-                onRerunAI={handleRerunAI}
-                onOpenDetail={handleOpenDetail}
-                onNavigate={handleNavigate}
-                onApprovalChange={handleApprovalChange}
-                menuAnchorEl={dropdownAnchorEl}
-                onMenuClick={handleMenuClick}
-                onMenuClose={handleMenuClose}
-                onCustomSelect={handleCustomSelect}
-                isMenuOpen={isMenuOpen}
-              />
+          <Box sx={{ 
+            flex: 1, 
+            overflow: 'auto',
+            px: { xs: 2, sm: 3 },
+            py: 2,
+          }}>
+            <Card sx={{ 
+              borderRadius: 2, 
+              boxShadow: 3,
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+            }}>
+              <CardContent sx={{ 
+                p: { xs: 2, sm: 3 },
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                minHeight: 0,
+              }}>
+                {/* Table Section */}
+                <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+                  <CompanyTable
+                    paginatedCompanies={paginatedCompanies}
+                    filteredCompanies={filteredCompanies}
+                    isSmall={isSmall}
+                    editedRegistrations={editedRegistrations}
+                    rerunLoading={rerunLoading}
+                    onSelectAll={toggleSelectAll}
+                    onSelectOne={toggleSelectOne}
+                    onRegistrationChange={handleRegistrationChange}
+                    onRerunAI={handleRerunAI}
+                    onOpenDetail={handleOpenDetail}
+                    onNavigate={handleNavigate}
+                    onApprovalChange={handleApprovalChange}
+                    menuAnchorEl={dropdownAnchorEl}
+                    onMenuClick={handleMenuClick}
+                    onMenuClose={handleMenuClose}
+                    onCustomSelect={handleCustomSelect}
+                    isMenuOpen={isMenuOpen}
+                  />
 
-              {/* Dialogs */}
-              <DetailDialog
-                open={openDetailDialog}
-                onClose={handleCloseDetailDialog}
-                company={selectedCompany}
-                detailType={detailType}
-                isSmall={isSmall}
-              />
+                </Box>
+              </CardContent>
+            </Card>
+          </Box>
 
-              <ExportDialog
-                open={exportDialogOpen}
-                onClose={closeExportDialog}
-                onExport={handleExportClick}
-                includeKeyData={includeKeyData}
-                setIncludeKeyData={setIncludeKeyData}
-                includePeopleData={includePeopleData}
-                setIncludePeopleData={setIncludePeopleData}
-                includeSummaryNotes={includeSummaryNotes}
-                setIncludeSummaryNotes={setIncludeSummaryNotes}
-                includeCompanyCharges={includeCompanyCharges}
-                setIncludeCompanyCharges={setIncludeCompanyCharges}
-                isSmall={isSmall}
-              />
-            </CardContent>
-          </Card>
-        </Container>
+          {/* Dialogs */}
+          <DetailDialog
+            open={openDetailDialog}
+            onClose={handleCloseDetailDialog}
+            company={selectedCompany}
+            detailType={detailType}
+            isSmall={isSmall}
+          />
+
+          <ExportDialog
+            open={exportDialogOpen}
+            onClose={closeExportDialog}
+            onExport={handleExportClick}
+            includeKeyData={includeKeyData}
+            setIncludeKeyData={setIncludeKeyData}
+            includePeopleData={includePeopleData}
+            setIncludePeopleData={setIncludePeopleData}
+            includeSummaryNotes={includeSummaryNotes}
+            setIncludeSummaryNotes={setIncludeSummaryNotes}
+            includeCompanyCharges={includeCompanyCharges}
+            setIncludeCompanyCharges={setIncludeCompanyCharges}
+            isSmall={isSmall}
+          />
+        </Box>
       </Box>
     </Box>
   );
