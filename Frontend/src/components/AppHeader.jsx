@@ -44,16 +44,6 @@ const AppHeader = ({
       }}
     >
       <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 1.5 }, minWidth: 0, flex: '1 1 auto' }}>
-        {isMobile && (
-          <IconButton
-            color="inherit"
-            aria-label="open drawer"
-            edge="start"
-            onClick={onDrawerToggle}
-          >
-            <MenuIcon />
-          </IconButton>
-        )}
         <Typography
           variant={isSmall ? "h6" : "h5"}
           noWrap
