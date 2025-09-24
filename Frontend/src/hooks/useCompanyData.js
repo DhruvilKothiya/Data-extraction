@@ -23,7 +23,7 @@ export const useCompanyData = () => {
       );
 
       setCompanyData(
-        response.data.map((company) => ({
+        response.data.data.map((company) => ({
           ...company,
           selected: false,
         }))

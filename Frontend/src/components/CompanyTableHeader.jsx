@@ -8,7 +8,8 @@ import {
   IconButton,
   Box,
   Menu,
-  MenuItem
+  MenuItem,
+  TableSortLabel
 } from '@mui/material';
 import { ArrowDropDown as ArrowDropDownIcon } from '@mui/icons-material';
 
@@ -21,7 +22,10 @@ const CompanyTableHeader = ({
   onMenuClick,
   onMenuClose,
   onCustomSelect,
-  isMenuOpen
+  isMenuOpen,
+  sortField,
+  sortOrder,
+  onSort
 }) => {
   return (
     <TableHead>
@@ -96,7 +100,13 @@ const CompanyTableHeader = ({
             backgroundColor: "background.paper",
           }}
         >
-          Company Name
+          <TableSortLabel
+            active={sortField === 'company_name'}
+            direction={sortField === 'company_name' ? sortOrder : 'asc'}
+            onClick={() => onSort('company_name')}
+          >
+            Company Name
+          </TableSortLabel>
         </TableCell>
 
         <TableCell>Company Status</TableCell>

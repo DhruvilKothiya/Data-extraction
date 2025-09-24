@@ -98,8 +98,15 @@ def reset_password(data: ResetPasswordSchema, db: Session = Depends(get_db)):
 
 
 @router.get("/company-data")
-def get_company_data(db: Session = Depends(get_db)):
-    companies = db.query(CompanyData).all()
+def get_company_data(
+    db: Session = Depends(get_db),
+    page: int = 1,
+    per_page: int = 100
+):
+    # Calculate pagination
+    total = db.query(CompanyData).count()
+    offset = (page - 1) * per_page
+    companies = db.query(CompanyData).offset(offset).limit(per_page).all()
 
     # Build a map of key_financial_data
     key_data_ids = [c.key_financial_data_id for c in companies if c.key_financial_data_id]
@@ -190,7 +197,15 @@ def get_company_data(db: Session = Depends(get_db)):
     if updated:
         db.commit()
 
-    return result
+    return {
+        "data": result,
+        "pagination": {
+            "total": total,
+            "page": page,
+            "per_page": per_page,
+            "total_pages": (total + per_page - 1) // per_page
+        }
+    }
 
 @router.post("/upload-file")
 def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
