@@ -174,7 +174,7 @@ const HomePage = () => {
           width: "100%",
           flexDirection: "column",
           minWidth: 0,
-          height: '100%',
+          height: '100vh',
           overflow: 'hidden',
         }}
       >
@@ -195,18 +195,16 @@ const HomePage = () => {
           display: 'flex', 
           flexDirection: 'column',
           overflow: 'hidden',
-          position: 'relative',
+          minHeight: 0,
         }}>
           <Box sx={{ 
-            position: 'sticky',
-            top: 0,
-            zIndex: 1100,
             backgroundColor: 'background.paper',
             borderBottom: '1px solid',
             borderColor: 'divider',
             px: { xs: 2, sm: 3 },
-            pt: 2,
+            pt: 1.5,
             pb: 1,
+            flexShrink: 0,
           }}>
             <FileUploadSection
               uploading={uploading}
@@ -217,7 +215,7 @@ const HomePage = () => {
               isSmall={isSmall}
             />
             
-            <Box sx={{ mt: 2 }}>
+            <Box sx={{ mt: 1 }}>
               <CompanyTableControls
                 searchTerm={searchTerm}
                 onSearchChange={handleSearch}
@@ -235,6 +233,7 @@ const HomePage = () => {
             overflow: 'auto',
             px: { xs: 2, sm: 3 },
             py: 2,
+            minHeight: 0,
           }}>
             <Card sx={{ 
               borderRadius: 2, 
@@ -249,9 +248,10 @@ const HomePage = () => {
                 display: 'flex',
                 flexDirection: 'column',
                 minHeight: 0,
+                overflow: 'hidden',
               }}>
                 {/* Table Section */}
-                <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+                <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'auto' }}>
                   <CompanyTable
                     paginatedCompanies={paginatedCompanies}
                     filteredCompanies={filteredCompanies}

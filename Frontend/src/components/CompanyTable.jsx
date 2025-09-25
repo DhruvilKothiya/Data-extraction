@@ -121,37 +121,15 @@ const CompanyTable = ({
         component={Paper}
         elevation={0}
         sx={{
+          flex: 1,
           width: "100%",
-          height: "80%",
           overflowX: "auto",
+          overflowY: "auto",
           "& .MuiTable-root": {
             minWidth: { xs: 800, sm: 1000 },
           },
         }}
-        // sx={{
-        //   flex: 1,
-        //   display: 'flex',
-        //   flexDirection: 'column',
-        //   maxHeight: 'calc(100vh - 200px)',
-        //   overflow: 'auto',
-        //   '& .MuiTable-root': {
-        //     minWidth: 'max-content',
-        //     tableLayout: 'fixed',
-        //   },
-        //   '& .MuiTableHead-root': {
-        //     position: 'sticky',
-        //     top: 0,
-        //     zIndex: 10,
-        //     backgroundColor: 'background.paper',
-        //     boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-        //   },
-        //   '& .MuiTableCell-head': {
-        //     backgroundColor: 'background.paper',
-        //     fontWeight: 'bold',
-        //     borderBottom: '2px solid',
-        //     borderColor: 'divider',
-        //   },
-        // }}
+        
       >
         <Table stickyHeader size={isSmall ? "small" : "medium"}>
           <CompanyTableHeader
@@ -195,7 +173,7 @@ const CompanyTable = ({
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
-          padding: "16px",
+          padding: { xs: "6px 8px", sm: "8px 12px" },
           borderTop: "1px solid",
           borderColor: "divider",
           backgroundColor: "background.paper",
@@ -204,8 +182,8 @@ const CompanyTable = ({
           zIndex: 5,
         }}
       >
-        <Stack direction="row" alignItems="center" spacing={2}>
-          <Typography variant="body2" sx={{ fontSize: "0.875rem" }}>
+        <Stack direction="row" alignItems="center" spacing={1.5}>
+          <Typography variant="body2" sx={{ fontSize: { xs: "0.75rem", sm: "0.8125rem" }, color: "text.secondary" }}>
             {sortedCompanies.length === 0 
               ? "No items" 
               : `${startIndex + 1}-${Math.min(endIndex, sortedCompanies.length)} of ${sortedCompanies.length}`
@@ -219,7 +197,15 @@ const CompanyTable = ({
             shape="rounded"
             showFirstButton
             showLastButton
-            size={isSmall ? "small" : "medium"}
+            size="small"
+            sx={{
+              '& .MuiPaginationItem-root': {
+                fontSize: { xs: '0.7rem', sm: '0.8rem' },
+                minWidth: { xs: 24, sm: 28 },
+                height: { xs: 24, sm: 28 },
+                margin: '0 2px',
+              },
+            }}
           />
         </Stack>
       </Box>

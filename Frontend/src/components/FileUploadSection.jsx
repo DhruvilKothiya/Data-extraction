@@ -16,10 +16,10 @@ const FileUploadSection = ({
       sx={{
         border: "2px dashed #aaa",
         borderRadius: 2,
-        p: { xs: 2, sm: 4 },
+        p: { xs: 1.5, sm: 2 },
         textAlign: "center",
         backgroundColor: "#f5f5f5",
-        mb: { xs: 2, sm: 4 },
+        mb: { xs: 1, sm: 1.5 },
       }}
     >
       <input
@@ -36,42 +36,48 @@ const FileUploadSection = ({
         }}
       />
       <label htmlFor="csv-upload" style={{ cursor: "pointer" }}>
-        <Box sx={{ display: "flex", justifyContent: "center" }}>
-          <UploadIcon sx={{ fontSize: { xs: 30, sm: 40 }, mb: 1 }} />
-        </Box>
-        <Button
-          variant="outlined"
-          component="span"
-          size={isSmall ? "small" : "medium"}
-        >
-          Choose CSV File to Upload
-        </Button>
-        <Typography variant="body2" mt={1} fontSize={{ xs: '0.75rem', sm: '0.875rem' }}>
-          or drag and drop your CSV here
-        </Typography>
-        {uploadedFileName && (
-          <Typography
-            variant="body2"
-            mt={1}
-            sx={{ color: "green", fontWeight: 500 }}
-            fontSize={{ xs: '0.75rem', sm: '0.875rem' }}
+        <Box sx={{ 
+          display: "flex", 
+          alignItems: "center", 
+          justifyContent: "center",
+          gap: 2,
+          flexWrap: 'wrap'
+        }}>
+          <UploadIcon sx={{ fontSize: { xs: 24, sm: 28 } }} />
+          <Button
+            variant="outlined"
+            component="span"
+            size="small"
+            sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
           >
-            Uploaded File: {uploadedFileName}
+            Choose CSV File to Upload
+          </Button>
+          <Typography variant="body2" fontSize={{ xs: '0.7rem', sm: '0.8rem' }} sx={{ color: 'text.secondary' }}>
+            or drag and drop your CSV here
           </Typography>
-        )}
+          {uploadedFileName && (
+            <Typography
+              variant="body2"
+              sx={{ color: "green", fontWeight: 500 }}
+              fontSize={{ xs: '0.7rem', sm: '0.8rem' }}
+            >
+              Uploaded: {uploadedFileName}
+            </Typography>
+          )}
+        </Box>
       </label>
       {uploading && (
-        <Box sx={{ mt: 2 }}>
-          <Typography variant="body2" fontSize={{ xs: '0.75rem', sm: '0.875rem' }}>
+        <Box sx={{ mt: 1 }}>
+          <Typography variant="body2" fontSize={{ xs: '0.7rem', sm: '0.8rem' }}>
             {uploadProgress}% uploaded
           </Typography>
           <Box
             sx={{
-              height: 8,
+              height: 6,
               backgroundColor: "#ddd",
-              borderRadius: 4,
+              borderRadius: 3,
               overflow: "hidden",
-              mt: 1,
+              mt: 0.5,
             }}
           >
             <Box
