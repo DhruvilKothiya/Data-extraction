@@ -1,10 +1,8 @@
 // utils/companyFilters.js
+
 export const filterCompanies = (companies, searchTerm, approvalFilter) => {
   return companies.filter((company) => {
-    const nameMatch = company.company_name
-      ?.toLowerCase()
-      .includes(searchTerm.toLowerCase());
-
+    // Search is now handled server-side, so we only filter by approval client-side
     const approvalMatch =
       approvalFilter === "all"
         ? true
@@ -12,7 +10,7 @@ export const filterCompanies = (companies, searchTerm, approvalFilter) => {
         ? company.approval_stage === 1
         : company.approval_stage === 0 || company.approval_stage === 2;
 
-    return nameMatch && approvalMatch;
+    return approvalMatch;
   });
 };
 

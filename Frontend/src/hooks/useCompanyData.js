@@ -9,7 +9,9 @@ export const useCompanyData = () => {
   const [dataLoaded, setDataLoaded] = useState(false);
   const [rerunLoading, setRerunLoading] = useState({});
   const [editedRegistrations, setEditedRegistrations] = useState({});
+  const [searchTerm, setSearchTerm] = useState('');
   const registrationTimersRef = useRef({});
+  const searchTimerRef = useRef(null);
   const [pagination, setPagination] = useState({
     page: 1,
     per_page: 100,
@@ -18,17 +20,28 @@ export const useCompanyData = () => {
   });
   const [currentPage, setCurrentPage] = useState(1);
 
-  const fetchCompanyData = async (page = 1) => {
+  const fetchCompanyData = async (page = 1, search = null) => {
     try {
       setDataLoaded(false);
       const token = localStorage.getItem("token");
+      
+      // Use passed search param or current searchTerm state
+      const searchQuery = search !== null ? search : searchTerm;
+      
+      const params = {
+        page: page,
+        per_page: 100
+      };
+      
+      // Only add search param if there's a search term
+      if (searchQuery && searchQuery.trim()) {
+        params.search = searchQuery.trim();
+      }
+      
       const response = await axios.get(
         `${process.env.REACT_APP_API_URL}/company-data`,
         {
-          params: {
-            page: page,
-            per_page: 100
-          },
+          params,
           headers: { Authorization: `Bearer ${token}` },
         }
       );
@@ -47,6 +60,26 @@ export const useCompanyData = () => {
     } finally {
       setDataLoaded(true);
     }
+  };
+
+  const handleSearchChange = (event) => {
+    const value = event.target.value;
+    setSearchTerm(value);
+    
+    // Clear existing timer
+    if (searchTimerRef.current) {
+      clearTimeout(searchTimerRef.current);
+    }
+    
+    // Set new timer for debounced search
+    searchTimerRef.current = setTimeout(() => {
+      setCurrentPage(1); 
+      fetchCompanyData(1, value);
+    }, 500); // 300ms debounce
+  };
+
+  const handlePageChange = (newPage) => {
+    fetchCompanyData(newPage);
   };
 
   const handleRerunAI = async (companyId) => {
@@ -180,7 +213,6 @@ export const useCompanyData = () => {
     );
   };
 
-
   const toggleSelectOne = (id) => {
     setCompanyData((prev) =>
       prev.map((c) => (c.id === id ? { ...c, selected: !c.selected } : c))
@@ -210,6 +242,18 @@ export const useCompanyData = () => {
     );
   };
 
+  // Cleanup function for timers
+  useEffect(() => {
+    return () => {
+      if (searchTimerRef.current) {
+        clearTimeout(searchTimerRef.current);
+      }
+      Object.values(registrationTimersRef.current).forEach(timer => {
+        clearTimeout(timer);
+      });
+    };
+  }, []);
+
   useEffect(() => {
     fetchCompanyData(1);
   }, []);
@@ -219,10 +263,13 @@ export const useCompanyData = () => {
     dataLoaded,
     rerunLoading,
     editedRegistrations,
+    searchTerm,
     fetchCompanyData,
     handleRerunAI,
     handleRegistrationChange,
     handleApprovalChange,
+    handleSearchChange,
+    handlePageChange,
     toggleSelectAll,
     toggleSelectOne,
     handleCustomSelect,
