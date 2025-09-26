@@ -101,12 +101,23 @@ def reset_password(data: ResetPasswordSchema, db: Session = Depends(get_db)):
 def get_company_data(
     db: Session = Depends(get_db),
     page: int = 1,
-    per_page: int = 100
+    per_page: int = 100,
+    search: str = None
 ):
-    # Calculate pagination
-    total = db.query(CompanyData).count()
+    # Build base query
+    base_query = db.query(CompanyData)
+    
+    # Apply search filter if provided
+    if search and search.strip():
+        search_term = f"%{search.strip()}%"
+        base_query = base_query.filter(
+            CompanyData.company_name.ilike(search_term)
+        )
+    
+    # Calculate pagination on filtered results
+    total = base_query.count()
     offset = (page - 1) * per_page
-    companies = db.query(CompanyData).offset(offset).limit(per_page).all()
+    companies = base_query.offset(offset).limit(per_page).all()
 
     # Build a map of key_financial_data
     key_data_ids = [c.key_financial_data_id for c in companies if c.key_financial_data_id]
