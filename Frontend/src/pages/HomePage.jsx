@@ -269,6 +269,7 @@ const HomePage = () => {
                     isMenuOpen={isMenuOpen}
                     pagination={pagination}
                     onPageChange={handlePageChange}
+                    dataLoaded={dataLoaded}
                   />
                 </Box>
               </CardContent>

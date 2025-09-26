@@ -168,7 +168,7 @@ const CompanyTable = ({
             onSort={handleSort}
           />
           <TableBody>
-            {sortedCompanies.map((company) => (
+            {dataLoaded && sortedCompanies.map((company) => (
               <CompanyTableRow
                 key={company.id}
                 company={company}
@@ -191,7 +191,7 @@ const CompanyTable = ({
       <Box
         sx={{
           display: "flex",
-          justifyContent: "center",
+          justifyContent: "space-between",
           alignItems: "center",
           padding: { xs: "6px 8px", sm: "8px 12px" },
           borderTop: "1px solid",
@@ -202,32 +202,30 @@ const CompanyTable = ({
           zIndex: 5,
         }}
       >
-        <Stack direction="row" alignItems="center" spacing={1.5}>
-          <Typography variant="body2" sx={{ fontSize: { xs: "0.75rem", sm: "0.8125rem" }, color: "text.secondary" }}>
-            {total === 0 
-              ? "No items" 
-              : `${startIndex}-${endIndex} of ${total}`
-            }
-          </Typography>
-          <Pagination
-            count={totalPages}
-            page={page}
-            onChange={handleChangePage}
-            color="primary"
-            shape="rounded"
-            showFirstButton
-            showLastButton
-            size="small"
-            sx={{
-              '& .MuiPaginationItem-root': {
-                fontSize: { xs: '0.7rem', sm: '0.8rem' },
-                minWidth: { xs: 24, sm: 28 },
-                height: { xs: 24, sm: 28 },
-                margin: '0 2px',
-              },
-            }}
-          />
-        </Stack>
+        <Typography variant="body2" sx={{ fontSize: { xs: "0.75rem", sm: "0.8125rem" }, color: "text.secondary" }}>
+          {total === 0 
+            ? "No items" 
+            : `${startIndex}-${endIndex} of ${total}`
+          }
+        </Typography>
+        <Pagination
+          count={totalPages}
+          page={page}
+          onChange={handleChangePage}
+          color="primary"
+          shape="rounded"
+          showFirstButton
+          showLastButton
+          size="small"
+          sx={{
+            '& .MuiPaginationItem-root': {
+              fontSize: { xs: '0.7rem', sm: '0.8rem' },
+              minWidth: { xs: 24, sm: 28 },
+              height: { xs: 24, sm: 28 },
+              margin: '0 2px',
+            },
+          }}
+        />
       </Box>
       
     </Box>
