@@ -8,6 +8,7 @@ import {
   Pagination,
   Stack,
   Typography,
+  CircularProgress,
 } from "@mui/material";
 import CompanyTableHeader from "./CompanyTableHeader";
 import CompanyTableRow from "./CompanyTableRow";
@@ -32,7 +33,8 @@ const CompanyTable = ({
   onCustomSelect,
   isMenuOpen,
   pagination,
-  onPageChange
+  onPageChange,
+  dataLoaded
 }) => {
   // 🔹 Frontend sorting state
   const [sortField, setSortField] = useState('company_name');
@@ -124,9 +126,30 @@ const CompanyTable = ({
           "& .MuiTable-root": {
             minWidth: { xs: 800, sm: 1000 },
           },
+          position: "relative",
         }}
         
       >
+        {/* Loading overlay for table area only */}
+        {!dataLoaded && (
+          <Box
+            sx={{
+              position: "absolute",
+              top: 120, // Start below the header (approximate header height)
+              left: 0,
+              right: 0,
+              bottom: 0,
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              backgroundColor: "rgba(255, 255, 255, 0.9)",
+              zIndex: 5, // Lower than header z-index
+            }}
+          >
+            <CircularProgress size={60} />
+          </Box>
+        )}
+        
         <Table stickyHeader size={isSmall ? "small" : "medium"}>
           <CompanyTableHeader
             filteredCompanies={filteredCompanies}

@@ -133,31 +133,7 @@ const HomePage = () => {
     handleExport(companyData);
   };
 
-  // Show loading state until data is loaded
-  if (!dataLoaded) {
-    return (
-      <Box
-        sx={{
-          display: "flex",
-          minHeight: "100vh",
-          width: "100%",
-          overflowX: "hidden",
-        }}
-      >
-        <Box
-          sx={{
-            flexGrow: 1,
-            ml: { xs: 0 },
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          <CircularProgress size={60} />
-        </Box>
-      </Box>
-    );
-  }
+  // Remove full-page loader - now handled within CompanyTable
 
   return (
     <Box
