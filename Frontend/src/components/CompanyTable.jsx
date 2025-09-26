@@ -31,14 +31,18 @@ const CompanyTable = ({
   onMenuClose,
   onCustomSelect,
   isMenuOpen,
+  pagination,
+  onPageChange
 }) => {
-  // 🔹 Pagination states
-  const [page, setPage] = useState(1); // Material-UI Pagination uses 1-indexed pages
-  const rowsPerPage = 25; // Fixed at 25 rows per page
-
-  // 🔹 Sorting states
+  // 🔹 Frontend sorting state
   const [sortField, setSortField] = useState('company_name');
   const [sortOrder, setSortOrder] = useState('asc');
+
+  // 🔹 Server-side pagination - page state is managed by parent
+  const page = pagination?.page || 1;
+  const totalPages = pagination?.total_pages || 1;
+  const total = pagination?.total || 0;
+  const perPage = pagination?.per_page || 100;
 
   // Only consider active companies for select-all states
   const activeFilteredCompanies = filteredCompanies.filter(
@@ -57,56 +61,48 @@ const CompanyTable = ({
   };
 
   const handleCustomSelectWithData = (option) => {
-    onCustomSelect(option, paginatedCompanies);
+    onCustomSelect(option, filteredCompanies);
     onMenuClose();
   };
 
-  // 🔹 Sorting logic
+  // 🔹 Frontend sorting logic
   const handleSort = (field) => {
-    if (sortField === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortOrder('asc');
-    }
-    // Keep current page when sorting - don't reset to page 1
+    const newOrder = sortField === field && sortOrder === 'asc' ? 'desc' : 'asc';
+    setSortField(field);
+    setSortOrder(newOrder);
   };
 
-  // 🔹 Pagination handlers
+  // 🔹 Apply sorting to filtered companies
+  const sortedCompanies = React.useMemo(() => {
+    if (!sortField) return filteredCompanies;
+
+    return [...filteredCompanies].sort((a, b) => {
+      let aValue = a[sortField];
+      let bValue = b[sortField];
+
+      // Handle null/undefined values
+      if (aValue == null) aValue = '';
+      if (bValue == null) bValue = '';
+
+      // Convert to strings for comparison
+      aValue = String(aValue).toLowerCase();
+      bValue = String(bValue).toLowerCase();
+
+      const comparison = aValue.localeCompare(bValue);
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+  }, [filteredCompanies, sortField, sortOrder]);
+
+  // 🔹 Pagination handler - calls parent's onPageChange to trigger API call
   const handleChangePage = (event, newPage) => {
-    setPage(newPage);
+    if (onPageChange) {
+      onPageChange(newPage);
+    }
   };
 
-  // 🔹 Sort the filtered companies
-  const sortedCompanies = [...filteredCompanies].sort((a, b) => {
-    let aValue = a[sortField];
-    let bValue = b[sortField];
-
-    // Handle null/undefined values
-    if (aValue == null) aValue = '';
-    if (bValue == null) bValue = '';
-
-    // Convert to string for comparison
-    aValue = aValue.toString().toLowerCase();
-    bValue = bValue.toString().toLowerCase();
-
-    if (sortOrder === 'asc') {
-      return aValue.localeCompare(bValue);
-    } else {
-      return bValue.localeCompare(aValue);
-    }
-  });
-
-  // 🔹 Calculate pagination values
-  const totalPages = Math.ceil(sortedCompanies.length / rowsPerPage);
-  
-  // 🔹 Ensure current page is valid (adjust if beyond available pages)
-  const validPage = Math.min(page, Math.max(1, totalPages));
-  const startIndex = (validPage - 1) * rowsPerPage; // Convert to 0-indexed for slicing
-  const endIndex = startIndex + rowsPerPage;
-  
-  // 🔹 Slice the sorted companies for current page
-  const paginatedCompanies = sortedCompanies.slice(startIndex, endIndex);
+  // 🔹 Calculate display range for current page
+  const startIndex = (page - 1) * perPage + 1;
+  const endIndex = Math.min(page * perPage, total);
 
   return (
     <Box
@@ -143,12 +139,13 @@ const CompanyTable = ({
             onMenuClose={onMenuClose}
             onCustomSelect={handleCustomSelectWithData}
             isMenuOpen={isMenuOpen}
+            // Frontend sorting props
             sortField={sortField}
             sortOrder={sortOrder}
             onSort={handleSort}
           />
           <TableBody>
-            {paginatedCompanies.map((company) => (
+            {sortedCompanies.map((company) => (
               <CompanyTableRow
                 key={company.id}
                 company={company}
@@ -184,14 +181,14 @@ const CompanyTable = ({
       >
         <Stack direction="row" alignItems="center" spacing={1.5}>
           <Typography variant="body2" sx={{ fontSize: { xs: "0.75rem", sm: "0.8125rem" }, color: "text.secondary" }}>
-            {sortedCompanies.length === 0 
+            {total === 0 
               ? "No items" 
-              : `${startIndex + 1}-${Math.min(endIndex, sortedCompanies.length)} of ${sortedCompanies.length}`
+              : `${startIndex}-${endIndex} of ${total}`
             }
           </Typography>
           <Pagination
             count={totalPages}
-            page={validPage}
+            page={page}
             onChange={handleChangePage}
             color="primary"
             shape="rounded"

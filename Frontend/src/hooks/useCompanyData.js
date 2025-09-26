@@ -10,14 +10,25 @@ export const useCompanyData = () => {
   const [rerunLoading, setRerunLoading] = useState({});
   const [editedRegistrations, setEditedRegistrations] = useState({});
   const registrationTimersRef = useRef({});
+  const [pagination, setPagination] = useState({
+    page: 1,
+    per_page: 100,
+    total: 0,
+    total_pages: 0
+  });
+  const [currentPage, setCurrentPage] = useState(1);
 
-  const fetchCompanyData = async () => {
+  const fetchCompanyData = async (page = 1) => {
     try {
       setDataLoaded(false);
       const token = localStorage.getItem("token");
       const response = await axios.get(
         `${process.env.REACT_APP_API_URL}/company-data`,
         {
+          params: {
+            page: page,
+            per_page: 100
+          },
           headers: { Authorization: `Bearer ${token}` },
         }
       );
@@ -28,6 +39,8 @@ export const useCompanyData = () => {
           selected: false,
         }))
       );
+      setPagination(response?.data?.pagination);
+      setCurrentPage(page);
     } catch (error) {
       console.error("Error fetching company data:", error);
       toast.error("Failed to fetch company data");
@@ -56,7 +69,7 @@ export const useCompanyData = () => {
       );
 
       toast.success("Re-run started successfully");
-      setTimeout(fetchCompanyData, 2000);
+      setTimeout(() => fetchCompanyData(currentPage), 2000);
     } catch (err) {
       console.error(err);
       toast.error("Re-run failed");
@@ -198,7 +211,7 @@ export const useCompanyData = () => {
   };
 
   useEffect(() => {
-    fetchCompanyData();
+    fetchCompanyData(1);
   }, []);
 
   return {
@@ -213,5 +226,7 @@ export const useCompanyData = () => {
     toggleSelectAll,
     toggleSelectOne,
     handleCustomSelect,
+    pagination,
+    currentPage
   };
 };

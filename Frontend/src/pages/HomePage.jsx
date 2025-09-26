@@ -25,7 +25,7 @@ import { useFileUpload } from "../hooks/useFileUpload";
 import { useExport } from "../hooks/useExport";
 
 // Utils
-import { filterCompanies, paginateCompanies } from "../utils/companyFilters";
+import { filterCompanies } from "../utils/companyFilters";
 // import { RESPONSIVE_BREAKPOINTS } from "../utils/constants";
 
 const HomePage = () => {
@@ -58,6 +58,8 @@ const HomePage = () => {
     toggleSelectAll,
     toggleSelectOne,
     handleCustomSelect,
+    pagination,
+    currentPage
   } = useCompanyData();
 
   const {
@@ -95,7 +97,6 @@ const HomePage = () => {
     searchTerm,
     approvalFilter
   );
-  const paginatedCompanies = paginateCompanies(filteredCompanies);
   const hasSelectedCompanies = companyData.some((c) => c.selected);
   const isMenuOpen = Boolean(dropdownAnchorEl);
 
@@ -134,6 +135,10 @@ const HomePage = () => {
 
   const handleExportClick = () => {
     handleExport(companyData);
+  };
+
+  const handlePageChange = (newPage) => {
+    fetchCompanyData(newPage);
   };
 
   // Show loading state until data is loaded
@@ -253,8 +258,7 @@ const HomePage = () => {
                 {/* Table Section */}
                 <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'auto' }}>
                   <CompanyTable
-                    paginatedCompanies={paginatedCompanies}
-                    filteredCompanies={filteredCompanies}
+                    filteredCompanies={companyData}
                     isSmall={isSmall}
                     editedRegistrations={editedRegistrations}
                     rerunLoading={rerunLoading}
@@ -270,6 +274,8 @@ const HomePage = () => {
                     onMenuClose={handleMenuClose}
                     onCustomSelect={handleCustomSelect}
                     isMenuOpen={isMenuOpen}
+                    pagination={pagination}
+                    onPageChange={handlePageChange}
                   />
 
                 </Box>
