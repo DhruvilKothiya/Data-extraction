@@ -105,9 +105,6 @@ const CompanyTableControls = ({
           >
             Export Data
           </Button>
-          <IconButton size={isSmall ? "small" : "medium"}>
-            <FilterIcon />
-          </IconButton>
         </Stack>
       </Stack>
     </Box>
