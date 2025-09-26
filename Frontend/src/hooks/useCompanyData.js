@@ -19,6 +19,7 @@ export const useCompanyData = () => {
     total_pages: 0
   });
   const [currentPage, setCurrentPage] = useState(1);
+  const [showInactive, setShowInactive] = useState('no');
 
   const fetchCompanyData = async (page = 1, search = null) => {
     try {
@@ -81,6 +82,10 @@ export const useCompanyData = () => {
   const handlePageChange = (newPage) => {
     fetchCompanyData(newPage);
   };
+
+  const handleShowInactiveChange = (event) => {
+  setShowInactive(event.target.value);
+};
 
   const handleRerunAI = async (companyId) => {
     try {
@@ -274,6 +279,8 @@ export const useCompanyData = () => {
     toggleSelectOne,
     handleCustomSelect,
     pagination,
-    currentPage
+    currentPage,
+    showInactive,
+    handleShowInactiveChange
   };
 };

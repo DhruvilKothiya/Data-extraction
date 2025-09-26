@@ -1,8 +1,8 @@
 // utils/companyFilters.js
 
-export const filterCompanies = (companies, searchTerm, approvalFilter) => {
+export const filterCompanies = (companies, searchTerm, approvalFilter, showInactive = 'no') => {
   return companies.filter((company) => {
-    // Search is now handled server-side, so we only filter by approval client-side
+    // Search is now handled server-side, so we only filter by approval and status client-side
     const approvalMatch =
       approvalFilter === "all"
         ? true
@@ -10,7 +10,13 @@ export const filterCompanies = (companies, searchTerm, approvalFilter) => {
         ? company.approval_stage === 1
         : company.approval_stage === 0 || company.approval_stage === 2;
 
-    return approvalMatch;
+    // Filter by company status (Active/Inactive)
+    const statusMatch = 
+      showInactive === 'yes' 
+        ? company.company_status === 'Inactive'  // Show only inactive companies
+        : company.company_status === 'Active';   // Show only active companies
+
+    return approvalMatch && statusMatch;
   });
 };
 

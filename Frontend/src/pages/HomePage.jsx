@@ -60,6 +60,8 @@ const HomePage = () => {
     searchTerm,
     handleSearchChange,
     handlePageChange,
+    showInactive,
+    handleShowInactiveChange
   } = useCompanyData();
 
   const {
@@ -89,7 +91,8 @@ const HomePage = () => {
   const filteredCompanies = filterCompanies(
     companyData,
     '', // No search term needed for client-side filtering
-    approvalFilter
+    approvalFilter,
+    showInactive
   );
   const hasSelectedCompanies = companyData.some((c) => c.selected);
   const isMenuOpen = Boolean(dropdownAnchorEl);
@@ -226,6 +229,8 @@ const HomePage = () => {
                 onApprovalFilterChange={handleApprovalFilterChange}
                 onExportClick={openExportDialog}
                 hasSelectedCompanies={hasSelectedCompanies}
+                showInactive={showInactive}
+                onShowInactiveChange={handleShowInactiveChange}
                 isSmall={isSmall}
               />
             </Box>

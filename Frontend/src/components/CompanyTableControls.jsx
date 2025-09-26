@@ -1,15 +1,18 @@
 // components/CompanyTableControls.jsx
-import React from 'react';
-import { 
-  Stack, 
-  TextField, 
-  MenuItem, 
-  Button, 
+import React from "react";
+import {
+  Stack,
+  TextField,
+  MenuItem,
+  Button,
   Box,
   IconButton,
-  InputAdornment 
-} from '@mui/material';
-import { Search as SearchIcon, FilterList as FilterIcon } from '@mui/icons-material';
+  InputAdornment,
+} from "@mui/material";
+import {
+  Search as SearchIcon,
+  FilterList as FilterIcon,
+} from "@mui/icons-material";
 
 const CompanyTableControls = ({
   searchTerm,
@@ -18,29 +21,31 @@ const CompanyTableControls = ({
   onApprovalFilterChange,
   onExportClick,
   hasSelectedCompanies,
-  isSmall
+  isSmall,
+  showInactive,
+  onShowInactiveChange,
 }) => {
   return (
     <Box
       sx={{
-        position: 'sticky',
+        position: "sticky",
         top: 0,
         zIndex: 11,
-        backgroundColor: 'background.paper',
+        backgroundColor: "background.paper",
         pt: 2,
         pb: 2,
-        borderBottom: '1px solid',
-        borderColor: 'divider',
+        borderBottom: "1px solid",
+        borderColor: "divider",
       }}
     >
       <Stack
         direction={{ xs: "column", sm: "row" }}
         spacing={2}
         sx={{
-          alignItems: { xs: 'stretch', sm: 'center' },
-          justifyContent: 'space-between',
-          maxWidth: '100%',
-          overflow: 'hidden',
+          alignItems: { xs: "stretch", sm: "center" },
+          justifyContent: "space-between",
+          maxWidth: "100%",
+          overflow: "hidden",
         }}
       >
         <TextField
@@ -56,41 +61,57 @@ const CompanyTableControls = ({
             ),
           }}
           sx={{
-            width: { xs: '100%', sm: 300 },
-            order: { xs: 1, sm: 1 }
+            width: { xs: "100%", sm: 300 },
+            order: { xs: 1, sm: 1 },
           }}
         />
 
-        <Box sx={{ 
-          display: 'flex', 
-          gap: 1, 
-          order: { xs: 2, sm: 2 },
-          flexWrap: 'wrap',
-          position: 'relative',
-          zIndex: 12,  
-          backgroundColor: 'background.paper', 
-          padding: 1, 
-          borderRadius: 1, 
-          minWidth: 150
-        }}>
+        <Box
+          sx={{
+            display: "flex",
+            gap: 1,
+            order: { xs: 2, sm: 2 },
+            flexWrap: "wrap",
+            position: "relative",
+            zIndex: 12,
+            backgroundColor: "background.paper",
+            padding: 1,
+            borderRadius: 1,
+            minWidth: 150,
+          }}
+        >
           <TextField
             select
             label="Filter by Approval"
-            size="small"  
+            size="small"
             value={approvalFilter}
             onChange={onApprovalFilterChange}
             sx={{ minWidth: 150 }}
           >
-        <MenuItem value="all">All</MenuItem>
+            <MenuItem value="all">All</MenuItem>
             <MenuItem value="approved">Approved</MenuItem>
-        <MenuItem value="unapproved">Unapproved</MenuItem>
+            <MenuItem value="unapproved">Unapproved</MenuItem>
+          </TextField>
+
+          {/* Add this new TextField for Show Inactive filter */}
+          <TextField
+            select
+            label="Show Inactive"
+            size="small"
+            value={showInactive}
+            onChange={onShowInactiveChange}
+            sx={{ minWidth: 130 }}
+          >
+            <MenuItem value="no">No</MenuItem>
+            <MenuItem value="yes">Yes</MenuItem>
           </TextField>
         </Box>
-
-        <Stack direction="row" spacing={1} 
+        <Stack
+          direction="row"
+          spacing={1}
           sx={{
             order: { xs: 3, sm: 3 },
-            justifyContent: { xs: 'center', sm: 'flex-end' }
+            justifyContent: { xs: "center", sm: "flex-end" },
           }}
         >
           <Button
@@ -99,8 +120,8 @@ const CompanyTableControls = ({
             disabled={!hasSelectedCompanies}
             size={isSmall ? "small" : "medium"}
             sx={{
-              width: { xs: '100%', sm: 'auto' },
-              whiteSpace: 'nowrap',
+              width: { xs: "100%", sm: "auto" },
+              whiteSpace: "nowrap",
             }}
           >
             Export Data
