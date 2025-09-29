@@ -11,6 +11,7 @@ export const useCompanyData = () => {
   const [editedRegistrations, setEditedRegistrations] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
   const registrationTimersRef = useRef({});
+  const [sortOrder, setSortOrder] = useState('asc');
   const searchTimerRef = useRef(null);
   const [pagination, setPagination] = useState({
     page: 1,
@@ -21,7 +22,7 @@ export const useCompanyData = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [showInactive, setShowInactive] = useState('no');
 
-  const fetchCompanyData = async (page = 1, search = null) => {
+  const fetchCompanyData = async (page = 1, search = null, order='asc') => {
     try {
       setDataLoaded(false);
       const token = localStorage.getItem("token");
@@ -31,7 +32,8 @@ export const useCompanyData = () => {
       
       const params = {
         page: page,
-        per_page: 100
+        per_page: 100,
+        sort_by: order
       };
       
       // Only add search param if there's a search term
@@ -80,7 +82,7 @@ export const useCompanyData = () => {
   };
 
   const handlePageChange = (newPage) => {
-    fetchCompanyData(newPage);
+    fetchCompanyData(newPage, null, sortOrder);
   };
 
   const handleShowInactiveChange = (event) => {
@@ -281,6 +283,8 @@ export const useCompanyData = () => {
     pagination,
     currentPage,
     showInactive,
-    handleShowInactiveChange
+    handleShowInactiveChange,
+    setSortOrder,
+    sortOrder
   };
 };

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams,useNavigate } from "react-router-dom";
 import axios from "axios";
 import {
   Box,
@@ -36,6 +36,7 @@ const KeyFinancialDataPage = () => {
   const { id } = useParams();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const navigate=useNavigate();
 
   const fetchKeyData = async () => {
     try {
@@ -273,7 +274,7 @@ const KeyFinancialDataPage = () => {
             <Button
               variant="contained"
               size="large"
-              onClick={() => window.history.back()}
+              onClick={() => navigate("/")}
             >
               🔙 Go Back
             </Button>

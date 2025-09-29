@@ -102,10 +102,16 @@ def get_company_data(
     db: Session = Depends(get_db),
     page: int = 1,
     per_page: int = 100,
-    search: str = None
+    search: str = None,
+    sort_by: str = 'asc',
+    show_inactive: bool = False
 ):
     # Build base query
     base_query = db.query(CompanyData)
+    if sort_by == 'asc':
+        base_query = base_query.order_by(CompanyData.company_name.asc())
+    if sort_by == 'desc':
+        base_query = base_query.order_by(CompanyData.company_name.desc())
     
     # Apply search filter if provided
     if search and search.strip():

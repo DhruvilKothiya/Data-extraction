@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   useTheme,
@@ -61,8 +61,14 @@ const HomePage = () => {
     handleSearchChange,
     handlePageChange,
     showInactive,
-    handleShowInactiveChange
+    handleShowInactiveChange,
+    sortOrder,
+    setSortOrder
   } = useCompanyData();
+
+  // useEffect(()=>{
+  //   console.log("test..", searchTerm)
+  // }, [searchTerm])
 
   const {
     uploadProgress,
@@ -270,6 +276,11 @@ const HomePage = () => {
                     pagination={pagination}
                     onPageChange={handlePageChange}
                     dataLoaded={dataLoaded}
+                    fetchCompanyData={fetchCompanyData}
+                    currentPage={currentPage}
+                    companyData={companyData}
+                    sortOrder={sortOrder}
+                    setSortOrder={setSortOrder}
                   />
                 </Box>
               </CardContent>

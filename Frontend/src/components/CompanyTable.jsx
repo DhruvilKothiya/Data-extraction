@@ -34,11 +34,15 @@ const CompanyTable = ({
   isMenuOpen,
   pagination,
   onPageChange,
-  dataLoaded
+  dataLoaded,
+  fetchCompanyData,
+  currentPage,
+  companyData,
+  sortOrder,
+  setSortOrder
 }) => {
   // 🔹 Frontend sorting state
   const [sortField, setSortField] = useState('company_name');
-  const [sortOrder, setSortOrder] = useState('asc');
 
   // 🔹 Server-side pagination - page state is managed by parent
   const page = pagination?.page || 1;
@@ -72,28 +76,8 @@ const CompanyTable = ({
     const newOrder = sortField === field && sortOrder === 'asc' ? 'desc' : 'asc';
     setSortField(field);
     setSortOrder(newOrder);
+    fetchCompanyData(currentPage,null,newOrder)
   };
-
-  // 🔹 Apply sorting to filtered companies
-  const sortedCompanies = React.useMemo(() => {
-    if (!sortField) return filteredCompanies;
-
-    return [...filteredCompanies].sort((a, b) => {
-      let aValue = a[sortField];
-      let bValue = b[sortField];
-
-      // Handle null/undefined values
-      if (aValue == null) aValue = '';
-      if (bValue == null) bValue = '';
-
-      // Convert to strings for comparison
-      aValue = String(aValue).toLowerCase();
-      bValue = String(bValue).toLowerCase();
-
-      const comparison = aValue.localeCompare(bValue);
-      return sortOrder === 'asc' ? comparison : -comparison;
-    });
-  }, [filteredCompanies, sortField, sortOrder]);
 
   // 🔹 Pagination handler - calls parent's onPageChange to trigger API call
   const handleChangePage = (event, newPage) => {
@@ -168,7 +152,7 @@ const CompanyTable = ({
             onSort={handleSort}
           />
           <TableBody>
-            {dataLoaded && sortedCompanies.map((company) => (
+            {dataLoaded && companyData.map((company) => (
               <CompanyTableRow
                 key={company.id}
                 company={company}
