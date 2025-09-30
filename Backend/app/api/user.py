@@ -302,7 +302,11 @@ def reprocess_company(company_id: int, db: Session = Depends(get_db)):
     if not registration_number:
         raise HTTPException(status_code=400, detail="Registration number not found")
    
-    # 3. Set status to Processing before starting
+    # 2. First set status to "Not Started" to indicate re-run has been initiated
+    company.status = "Not Started"
+    db.commit()
+    
+    # 3. Now set status to Processing before calling ML API
     company.status = "Processing"
     db.commit()
 

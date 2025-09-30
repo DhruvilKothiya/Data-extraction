@@ -92,6 +92,16 @@ export const useCompanyData = () => {
   const handleRerunAI = async (companyId) => {
     try {
       setRerunLoading((prev) => ({ ...prev, [companyId]: true }));
+      
+      // Immediately update status to "Not Started" in UI
+      setCompanyData((prev) =>
+        prev.map((company) =>
+          company.id === companyId
+            ? { ...company, status: "Not Started" }
+            : company
+        )
+      );
+      
       const token = localStorage.getItem("token");
 
       const response = await axios.post(
@@ -100,6 +110,7 @@ export const useCompanyData = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
+      // Update with the final status from backend
       setCompanyData((prev) =>
         prev.map((company) =>
           company.id === companyId
@@ -109,10 +120,17 @@ export const useCompanyData = () => {
       );
 
       toast.success("Re-run started successfully");
-      setTimeout(() => fetchCompanyData(currentPage), 2000);
     } catch (err) {
       console.error(err);
       toast.error("Re-run failed");
+      // Reset status on error
+      setCompanyData((prev) =>
+        prev.map((company) =>
+          company.id === companyId
+            ? { ...company, status: "Not Started" }
+            : company
+        )
+      );
     } finally {
       setRerunLoading((prev) => ({ ...prev, [companyId]: false }));
     }
