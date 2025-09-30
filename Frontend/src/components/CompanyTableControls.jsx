@@ -12,6 +12,7 @@ import {
 import {
   Search as SearchIcon,
   FilterList as FilterIcon,
+  Clear as ClearIcon,
 } from "@mui/icons-material";
 
 const CompanyTableControls = ({
@@ -24,6 +25,7 @@ const CompanyTableControls = ({
   isSmall,
   showInactive,
   onShowInactiveChange,
+  onClearSearch,
 }) => {
   return (
     <Box
@@ -48,23 +50,39 @@ const CompanyTableControls = ({
           overflow: "hidden",
         }}
       >
-        <TextField
-          placeholder="Search company..."
-          value={searchTerm}
-          onChange={onSearchChange}
-          size="small"
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon />
-              </InputAdornment>
-            ),
-          }}
-          sx={{
-            width: { xs: "100%", sm: 300 },
-            order: { xs: 1, sm: 1 },
-          }}
-        />
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, order: { xs: 1, sm: 1 } }}>
+          <TextField
+            placeholder="Search company..."
+            value={searchTerm}
+            onChange={onSearchChange}
+            size="small"
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            }}
+            sx={{
+              width: { xs: "100%", sm: 300 },
+            }}
+          />
+          {searchTerm && (
+            <IconButton
+              onClick={onClearSearch}
+              size="small"
+              sx={{
+                color: 'text.secondary',
+                '&:hover': {
+                  color: 'primary.main',
+                },
+              }}
+              title="Clear search"
+            >
+              <ClearIcon />
+            </IconButton>
+          )}
+        </Box>
 
         <Box
           sx={{
