@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useLocation, useNavigate } from "react-router-dom";
+import { useParams, useLocation } from "react-router-dom";
+import { useNavigationHelper } from "../hooks/useNavigationHelper";
 // import Sidebar from "../components/Sidebar";
 import {
   Box,
@@ -45,7 +46,7 @@ const PeoplePage = () => {
 
   const { registeredNumber: companyRegisteredNumber } = useParams();
   const location = useLocation();
-  const navigate = useNavigate();
+  const { navigateToHomepage, navigate } = useNavigationHelper();
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileAnchorEl, setProfileAnchorEl] = useState(null);
@@ -78,7 +79,7 @@ const PeoplePage = () => {
   };
 
   const handleBackToCompanies = () => {
-    navigate("/");
+    navigateToHomepage();
   };
 
   const formatDate = (dateString) => {

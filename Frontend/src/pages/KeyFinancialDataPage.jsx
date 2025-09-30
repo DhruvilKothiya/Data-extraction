@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { useParams,useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import axios from "axios";
+import { useNavigationHelper } from "../hooks/useNavigationHelper";
 import {
   Box,
   Typography,
@@ -36,7 +37,7 @@ const KeyFinancialDataPage = () => {
   const { id } = useParams();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const navigate=useNavigate();
+  const { navigateToHomepage } = useNavigationHelper();
 
   const fetchKeyData = async () => {
     try {
@@ -274,7 +275,7 @@ const KeyFinancialDataPage = () => {
             <Button
               variant="contained"
               size="large"
-              onClick={() => navigate("/")}
+              onClick={navigateToHomepage}
             >
               🔙 Go Back
             </Button>
