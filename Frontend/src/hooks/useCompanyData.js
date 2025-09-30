@@ -1,26 +1,38 @@
 // hooks/useCompanyData.js
 
 import { useState, useEffect, useRef } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import {
+  setSearchTerm,
+  setCurrentPage,
+  setSortOrder,
+  setShowInactive,
+  setPagination,
+  clearSearchState,
+  setReturningFromDetail,
+} from '../store/slices/companySearchSlice';
 
 export const useCompanyData = () => {
+  // Redux state and dispatch
+  const dispatch = useDispatch();
+  const {
+    searchTerm,
+    currentPage,
+    sortOrder,
+    showInactive,
+    pagination,
+    isReturningFromDetail
+  } = useSelector((state) => state.companySearch);
+
+  // Local component state
   const [companyData, setCompanyData] = useState([]);
   const [dataLoaded, setDataLoaded] = useState(false);
   const [rerunLoading, setRerunLoading] = useState({});
   const [editedRegistrations, setEditedRegistrations] = useState({});
-  const [searchTerm, setSearchTerm] = useState('');
   const registrationTimersRef = useRef({});
-  const [sortOrder, setSortOrder] = useState('asc');
   const searchTimerRef = useRef(null);
-  const [pagination, setPagination] = useState({
-    page: 1,
-    per_page: 100,
-    total: 0,
-    total_pages: 0
-  });
-  const [currentPage, setCurrentPage] = useState(1);
-  const [showInactive, setShowInactive] = useState('no');
 
   const fetchCompanyData = async (page = 1, search = null, order='asc') => {
     try {
@@ -55,8 +67,8 @@ export const useCompanyData = () => {
           selected: false,
         }))
       );
-      setPagination(response?.data?.pagination);
-      setCurrentPage(page);
+      dispatch(setPagination(response?.data?.pagination));
+      dispatch(setCurrentPage(page));
     } catch (error) {
       console.error("Error fetching company data:", error);
       toast.error("Failed to fetch company data");
@@ -67,7 +79,7 @@ export const useCompanyData = () => {
 
   const handleSearchChange = (event) => {
     const value = event.target.value;
-    setSearchTerm(value);
+    dispatch(setSearchTerm(value));
     
     // Clear existing timer
     if (searchTimerRef.current) {
@@ -76,9 +88,9 @@ export const useCompanyData = () => {
     
     // Set new timer for debounced search
     searchTimerRef.current = setTimeout(() => {
-      setCurrentPage(1); 
+      dispatch(setCurrentPage(1)); 
       fetchCompanyData(1, value);
-    }, 500); // 300ms debounce
+    }, 500); // 500ms debounce
   };
 
   const handlePageChange = (newPage) => {
@@ -86,8 +98,13 @@ export const useCompanyData = () => {
   };
 
   const handleShowInactiveChange = (event) => {
-  setShowInactive(event.target.value);
-};
+    dispatch(setShowInactive(event.target.value));
+  };
+
+  const handleClearSearch = () => {
+    dispatch(clearSearchState());
+    fetchCompanyData(1, '', 'asc');
+  };
 
   const handleRerunAI = async (companyId) => {
     try {
@@ -279,9 +296,25 @@ export const useCompanyData = () => {
     };
   }, []);
 
+  const handleSortOrderChange = (newSortOrder) => {
+    dispatch(setSortOrder(newSortOrder));
+    fetchCompanyData(currentPage, searchTerm, newSortOrder);
+  };
+
+  // Load data with persisted search state on component mount
   useEffect(() => {
-    fetchCompanyData(1);
-  }, []);
+    // If returning from detail page, use persisted search state
+    if (isReturningFromDetail || searchTerm) {
+      fetchCompanyData(currentPage, searchTerm, sortOrder);
+      // Reset the returning flag after loading
+      if (isReturningFromDetail) {
+        dispatch(setReturningFromDetail(false));
+      }
+    } else {
+      // Fresh load
+      fetchCompanyData(1);
+    }
+  }, []); // Empty dependency array - only run on mount
 
   return {
     companyData,
@@ -302,7 +335,8 @@ export const useCompanyData = () => {
     currentPage,
     showInactive,
     handleShowInactiveChange,
-    setSortOrder,
+    handleSortOrderChange,
+    handleClearSearch,
     sortOrder
   };
 };
