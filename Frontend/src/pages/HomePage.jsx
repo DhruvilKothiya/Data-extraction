@@ -63,7 +63,8 @@ const HomePage = () => {
     showInactive,
     handleShowInactiveChange,
     sortOrder,
-    setSortOrder
+    handleSortOrderChange,
+    handleClearSearch
   } = useCompanyData();
 
   // useEffect(()=>{
@@ -213,6 +214,7 @@ const HomePage = () => {
                 hasSelectedCompanies={hasSelectedCompanies}
                 showInactive={showInactive}
                 onShowInactiveChange={handleShowInactiveChange}
+                onClearSearch={handleClearSearch}
                 isSmall={isSmall}
               />
             </Box>
@@ -280,7 +282,7 @@ const HomePage = () => {
                     currentPage={currentPage}
                     companyData={companyData}
                     sortOrder={sortOrder}
-                    setSortOrder={setSortOrder}
+                    setSortOrder={handleSortOrderChange}
                   />
                 </Box>
               </CardContent>
