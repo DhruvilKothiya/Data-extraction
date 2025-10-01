@@ -34,7 +34,7 @@ export const useCompanyData = () => {
   const registrationTimersRef = useRef({});
   const searchTimerRef = useRef(null);
 
-  const fetchCompanyData = async (page = 1, search = null, order='asc',show_inactive=false) => {
+  const fetchCompanyData = async (page = 1, search = null, order='asc', show_inactive=false, approval_filter='all') => {
     try {
       setDataLoaded(false);
       const token = localStorage.getItem("token");
@@ -46,7 +46,8 @@ export const useCompanyData = () => {
         page: page,
         per_page: 100,
         sort_by: order,
-        show_inactive:show_inactive
+        show_inactive: show_inactive,
+        approval_filter: approval_filter
       };
       
       // Only add search param if there's a search term
@@ -90,12 +91,12 @@ export const useCompanyData = () => {
     // Set new timer for debounced search
     searchTimerRef.current = setTimeout(() => {
       dispatch(setCurrentPage(1)); 
-      fetchCompanyData(1, value);
+      fetchCompanyData(1, value, sortOrder, showInactive === 'yes', 'all');
     }, 500); // 500ms debounce
   };
 
-  const handlePageChange = (newPage) => {
-    fetchCompanyData(newPage, null, sortOrder);
+  const handlePageChange = (newPage, approvalFilter = 'all') => {
+    fetchCompanyData(newPage, null, sortOrder, showInactive === 'yes', approvalFilter);
   };
 
   const handleShowInactiveChange = (event) => {
@@ -106,12 +107,17 @@ export const useCompanyData = () => {
 
     // if value is "yes" → pass false, otherwise true
     const showInactive = value === "yes" ? true : false;
-    fetchCompanyData(currentPage, null, sortOrder, showInactive)
+    fetchCompanyData(currentPage, null, sortOrder, showInactive, 'all')
+  };
+
+  const handleApprovalFilterChange = (approvalFilter) => {
+    const showInactiveValue = showInactive === 'yes';
+    fetchCompanyData(1, null, sortOrder, showInactiveValue, approvalFilter);
   };
 
   const handleClearSearch = () => {
     dispatch(clearSearchState());
-    fetchCompanyData(1, '', 'asc');
+    fetchCompanyData(1, '', 'asc', false, 'all');
   };
 
   const handleRerunAI = async (companyId) => {
@@ -306,21 +312,21 @@ export const useCompanyData = () => {
 
   const handleSortOrderChange = (newSortOrder) => {
     dispatch(setSortOrder(newSortOrder));
-    fetchCompanyData(currentPage, searchTerm, newSortOrder);
+    fetchCompanyData(currentPage, searchTerm, newSortOrder, showInactive === 'yes', 'all');
   };
 
   // Load data with persisted search state on component mount
   useEffect(() => {
     // If returning from detail page, use persisted search state
     if (isReturningFromDetail || searchTerm) {
-      fetchCompanyData(currentPage, searchTerm, sortOrder);
+      fetchCompanyData(currentPage, searchTerm, sortOrder, showInactive === 'yes', 'all');
       // Reset the returning flag after loading
       if (isReturningFromDetail) {
         dispatch(setReturningFromDetail(false));
       }
     } else {
       // Fresh load
-      fetchCompanyData(1);
+      fetchCompanyData(1, null, 'asc', false, 'all');
     }
   }, []); // Empty dependency array - only run on mount
 
@@ -343,6 +349,7 @@ export const useCompanyData = () => {
     currentPage,
     showInactive,
     handleShowInactiveChange,
+    handleApprovalFilterChange,
     handleSortOrderChange,
     handleClearSearch,
     sortOrder

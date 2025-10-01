@@ -104,7 +104,8 @@ def get_company_data(
     per_page: int = 100,
     search: str = None,
     sort_by: str = 'asc',
-    show_inactive: bool = False
+    show_inactive: bool = False,
+    approval_filter: str = 'all'
 ):
     # Base query
     base_query = db.query(CompanyData)
@@ -130,6 +131,13 @@ def get_company_data(
         else:
             # Only inactive
             base_query = base_query.filter(KeyFinancialData.company_registered_number == None)
+    
+    # Approval filter - applies regardless of search
+    if approval_filter != 'all':
+        if approval_filter == 'approved':
+            base_query = base_query.filter(CompanyData.approval_stage == 1)
+        elif approval_filter == 'unapproved':
+            base_query = base_query.filter(CompanyData.approval_stage.in_([0, 2]))
 
     # Pagination
     total = base_query.count()

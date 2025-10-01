@@ -62,14 +62,11 @@ const HomePage = () => {
     handlePageChange,
     showInactive,
     handleShowInactiveChange,
+    handleApprovalFilterChange,
     sortOrder,
     handleSortOrderChange,
     handleClearSearch
   } = useCompanyData();
-
-  // useEffect(()=>{
-  //   console.log("test..", searchTerm)
-  // }, [searchTerm])
 
   const {
     uploadProgress,
@@ -94,20 +91,18 @@ const HomePage = () => {
     handleExport,
   } = useExport();
 
-  // Computed values - Now only filtering by approval since search is handled server-side
-  const filteredCompanies = filterCompanies(
-    companyData,
-    '', // No search term needed for client-side filtering
-    approvalFilter,
-    showInactive
-  );
+  // Since filtering is now handled server-side, filteredCompanies is just companyData
+  const filteredCompanies = companyData;
   const hasSelectedCompanies = companyData.some((c) => c.selected);
   const isMenuOpen = Boolean(dropdownAnchorEl);
 
   // Event handlers
   const handleDrawerToggle = () => setMobileOpen(!mobileOpen);
-  const handleApprovalFilterChange = (event) =>
-    setApprovalFilter(event.target.value);
+  const handleApprovalFilterChangeLocal = (event) => {
+    const value = event.target.value;
+    setApprovalFilter(value);
+    handleApprovalFilterChange(value);
+  };
   const handleProfileMenuOpen = (event) =>
     setProfileAnchorEl(event.currentTarget);
   const handleProfileMenuClose = () => setProfileAnchorEl(null);
@@ -209,7 +204,7 @@ const HomePage = () => {
                 searchTerm={searchTerm}
                 onSearchChange={handleSearchChange}
                 approvalFilter={approvalFilter}
-                onApprovalFilterChange={handleApprovalFilterChange}
+                onApprovalFilterChange={handleApprovalFilterChangeLocal}
                 onExportClick={openExportDialog}
                 hasSelectedCompanies={hasSelectedCompanies}
                 showInactive={showInactive}
