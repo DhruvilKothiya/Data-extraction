@@ -526,6 +526,11 @@ def export_selected_key_financial_data(
                     "Diversified Growth": d.assets_diversified_growth,
                     "Alternatives": d.assets_alternatives,
                     "Insurance Contracts": d.assets_insurance_contracts,
+                    "Current Company Name": d.current_company_name,
+                    "SIC Code 1": d.sic1,
+                    "SIC Code 2": d.sic2,
+                    "Location": d.location,
+                    "Nature of Business": d.nature_of_business,
                 })
 
         main_rows.append(row)
