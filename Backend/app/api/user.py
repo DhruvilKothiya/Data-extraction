@@ -106,37 +106,48 @@ def get_company_data(
     sort_by: str = 'asc',
     show_inactive: bool = False
 ):
-    # Build base query
+    # Base query
     base_query = db.query(CompanyData)
+
+    # Sorting
     if sort_by == 'asc':
         base_query = base_query.order_by(CompanyData.company_name.asc())
-    if sort_by == 'desc':
+    elif sort_by == 'desc':
         base_query = base_query.order_by(CompanyData.company_name.desc())
-    
-    # Apply search filter if provided
+
+    # Search filter
     if search and search.strip():
         search_term = f"%{search.strip()}%"
-        base_query = base_query.filter(
-            CompanyData.company_name.ilike(search_term)
+        base_query = base_query.filter(CompanyData.company_name.ilike(search_term))
+    else:
+        # Active/inactive filter applies only when no search is provided
+        base_query = base_query.join(
+            KeyFinancialData, CompanyData.key_financial_data_id == KeyFinancialData.id, isouter=True
         )
-    
-    # Calculate pagination on filtered results
+        if not show_inactive:
+            # Only active
+            base_query = base_query.filter(KeyFinancialData.company_registered_number != None)
+        else:
+            # Only inactive
+            base_query = base_query.filter(KeyFinancialData.company_registered_number == None)
+
+    # Pagination
     total = base_query.count()
     offset = (page - 1) * per_page
     companies = base_query.offset(offset).limit(per_page).all()
 
-    # Build a map of key_financial_data
+    # --- preload related data ---
     key_data_ids = [c.key_financial_data_id for c in companies if c.key_financial_data_id]
     key_data_list = db.query(KeyFinancialData).filter(KeyFinancialData.id.in_(key_data_ids)).all()
     key_data_map = {k.id: k for k in key_data_list}
-    pdf_data_map = {}
+
     registered_numbers = [kfd.company_registered_number for kfd in key_data_list if kfd.company_registered_number]
+    pdf_data_map = {}
     if registered_numbers:
         pdf_data_list = db.query(CompanyPDFs).filter(
             CompanyPDFs.company_registered_number.in_(registered_numbers)
         ).all()
         pdf_data_map = {pdf.company_registered_number: pdf.pdf_links or [] for pdf in pdf_data_list}
-    
 
     def extract_latest(json_data):
         if not json_data or not isinstance(json_data, dict):
@@ -147,22 +158,21 @@ def get_company_data(
         except Exception:
             return None
 
-    # Keep track of changes for bulk commit
+    # Track updates
     updated = False
-
     result = []
+
     for c in companies:
         key_financial_data = None
         if c.key_financial_data_id in key_data_map:
             kfd = key_data_map[c.key_financial_data_id]
             status_value = "Active" if kfd.company_registered_number else "Inactive"
 
-            # Update DB if company_status is different
+            # Update DB if mismatch
             if kfd.company_status != status_value:
                 kfd.company_status = status_value
                 updated = True
-                
-            # Prepare key financial data for frontend
+
             key_financial_data = {
                 "company_status": kfd.company_status,
                 "company_registered_number": kfd.company_registered_number,
@@ -203,14 +213,12 @@ def get_company_data(
             "fair_value_assets": key_data_map[c.key_financial_data_id].fair_value_assets
                 if c.key_financial_data_id in key_data_map else {},
             "people_page_link": c.people_page_link or f"/people/{c.id}",
-            # "summary_notes_link": c.summary_notes_link or f"/summary-notes/{c.id}",
-            "key_financial_data": key_financial_data, 
+            "key_financial_data": key_financial_data,
             "pdf_links": pdf_data_map.get(
                 key_data_map[c.key_financial_data_id].company_registered_number, []
             ) if c.key_financial_data_id in key_data_map else [],
         })
 
-    # Commit all status updates at once
     if updated:
         db.commit()
 
@@ -223,6 +231,8 @@ def get_company_data(
             "total_pages": (total + per_page - 1) // per_page
         }
     }
+
+
 
 @router.post("/upload-file")
 def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):

@@ -34,7 +34,7 @@ export const useCompanyData = () => {
   const registrationTimersRef = useRef({});
   const searchTimerRef = useRef(null);
 
-  const fetchCompanyData = async (page = 1, search = null, order='asc') => {
+  const fetchCompanyData = async (page = 1, search = null, order='asc',show_inactive=false) => {
     try {
       setDataLoaded(false);
       const token = localStorage.getItem("token");
@@ -45,7 +45,8 @@ export const useCompanyData = () => {
       const params = {
         page: page,
         per_page: 100,
-        sort_by: order
+        sort_by: order,
+        show_inactive:show_inactive
       };
       
       // Only add search param if there's a search term
@@ -98,7 +99,14 @@ export const useCompanyData = () => {
   };
 
   const handleShowInactiveChange = (event) => {
-    dispatch(setShowInactive(event.target.value));
+    const value = event.target.value;
+    console.log(value, "value");
+
+    dispatch(setShowInactive(value));
+
+    // if value is "yes" → pass false, otherwise true
+    const showInactive = value === "yes" ? true : false;
+    fetchCompanyData(currentPage, null, sortOrder, showInactive)
   };
 
   const handleClearSearch = () => {
