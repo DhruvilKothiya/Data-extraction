@@ -270,7 +270,7 @@ def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
 
             try:
                 api_response = requests.post(
-                    "http://8be3ef7e1de1.ngrok-free.app:8000/process-company",
+                    PROCESS_COMPANY_API,
                     json={
                         "company": company_name,
                         "address": full_address
