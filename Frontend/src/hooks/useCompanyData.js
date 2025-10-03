@@ -54,7 +54,7 @@ export const useCompanyData = () => {
       if (searchQuery && searchQuery.trim()) {
         params.search = searchQuery.trim();
       }
-      
+      console.log("Test")
       const response = await axios.get(
         `${process.env.REACT_APP_API_URL}/company-data`,
         {
@@ -62,7 +62,7 @@ export const useCompanyData = () => {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-
+      console.log("Response",response,params)
       setCompanyData(
         response.data.data.map((company) => ({
           ...company,
@@ -103,11 +103,13 @@ export const useCompanyData = () => {
     const value = event.target.value;
     console.log(value, "value");
 
-    dispatch(setShowInactive(value));
-
     // if value is "yes" → pass false, otherwise true
     const showInactive = value === "yes" ? true : false;
+    console.log(showInactive,"Show ina")
     fetchCompanyData(currentPage, null, sortOrder, showInactive, 'all')
+    dispatch(setShowInactive(value));
+    console.log("fetchdata",fetchCompanyData)
+
   };
 
   const handleApprovalFilterChange = (approvalFilter) => {
@@ -175,7 +177,7 @@ export const useCompanyData = () => {
         { registration_number: newNumber },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-
+  
       setCompanyData((prev) =>
         prev.map((company) =>
           company.id === companyId
@@ -183,18 +185,19 @@ export const useCompanyData = () => {
                 ...company,
                 registration_number: response.data.new_registration_number,
                 company_status: newNumber ? "Active" : "Inactive",
-                key_financial_data: {}, 
+                // Keep existing key_financial_data instead of replacing with empty object
+                key_financial_data: company.key_financial_data || {},
               }
             : company
         )
       );
-
+  
       setEditedRegistrations((prev) => {
         const newState = { ...prev };
         delete newState[companyId];
         return newState;
       });
-
+  
       toast.success("Registration number updated");
     } catch (err) {
       console.error(err);

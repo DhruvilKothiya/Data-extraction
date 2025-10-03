@@ -127,10 +127,10 @@ def get_company_data(
         )
         if not show_inactive:
             # Only active
-            base_query = base_query.filter(KeyFinancialData.company_registered_number != None)
+            base_query = base_query.filter(KeyFinancialData.company_status == "Active")
         else:
             # Only inactive
-            base_query = base_query.filter(KeyFinancialData.company_registered_number == None)
+            base_query = base_query.filter(KeyFinancialData.company_status== "Inactive")
     
     # Approval filter - applies regardless of search
     if approval_filter != 'all':
@@ -270,7 +270,7 @@ def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
 
             try:
                 api_response = requests.post(
-                    PROCESS_COMPANY_API,
+                    "http://8be3ef7e1de1.ngrok-free.app:8000/process-company",
                     json={
                         "company": company_name,
                         "address": full_address
@@ -804,38 +804,43 @@ def update_registration_number(company_id: int, data: dict = Body(...), db: Sess
     if not company:
         raise HTTPException(status_code=404, detail="Company not found")
 
-    old_key_data = (
-        db.query(KeyFinancialData)
-        .filter(KeyFinancialData.id == company.key_financial_data_id)
-        .first()
-    )
-    if not old_key_data:
-        raise HTTPException(status_code=404, detail="Key financial data not found")
+    # Check if company already has key_financial_data
+    if company.key_financial_data_id:
+        # Update existing key financial data
+        key_data = (
+            db.query(KeyFinancialData)
+            .filter(KeyFinancialData.id == company.key_financial_data_id)
+            .first()
+        )
+        if not key_data:
+            raise HTTPException(status_code=404, detail="Key financial data not found")
+        
+        # Simply update the registration number on existing record
+        key_data.company_registered_number = new_number
+    else:
+        # Create new key financial data only if it doesn't exist
+        key_data = KeyFinancialData(
+            company_registered_number=new_number,
+            company_name=company.company_name if hasattr(company, 'company_name') else None,
+        )
+        db.add(key_data)
+        db.flush()  # Flush to get the ID without committing
+        
+        # Link company to new key financial data
+        company.key_financial_data_id = key_data.id
 
-    # 1. Create new entry with updated registration number
-    new_key_data = KeyFinancialData(
-        company_registered_number=new_number,
-        company_name=old_key_data.company_name,
-        # leave other fields empty
-    )
-    db.add(new_key_data)
-    db.commit()
-    db.refresh(new_key_data)
-
-    # 2. Update company to point to the new key_data
-    company.key_financial_data_id = new_key_data.id
+    # Update company status
     company.company_status = "Active" if new_number else "Inactive"
+    
+    # Commit all changes
     db.commit()
-
-    # 3. Delete old key data
-    db.delete(old_key_data)
-    db.commit()
+    db.refresh(company)
 
     return {
         "message": "Registration number updated successfully",
         "new_registration_number": new_number,
-    }
-    
+    }  
+
 @router.put("/update-approval-stage/{company_id}")
 def update_approval_stage(company_id: int, data: dict = Body(...), db: Session = Depends(get_db)):
     new_stage = data.get("approval_stage")
