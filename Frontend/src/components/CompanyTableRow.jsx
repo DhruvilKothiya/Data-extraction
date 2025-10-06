@@ -457,7 +457,9 @@ const CompanyTableRow = ({
         </TableCell>
 
         <TableCell>
-          <Box sx={getStatusStyles(company.status)}>{company.status}</Box>
+          <Box sx={getStatusStyles(company.status || "Not Started")}>
+            {company.status || "Not Started"}
+          </Box>
         </TableCell>
       </TableRow>
 

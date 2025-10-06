@@ -62,7 +62,7 @@ export const useCompanyData = () => {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      console.log("Response",response,params)
+   
       setCompanyData(
         response.data.data.map((company) => ({
           ...company,
