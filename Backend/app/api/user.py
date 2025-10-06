@@ -804,33 +804,41 @@ def update_registration_number(company_id: int, data: dict = Body(...), db: Sess
     if not company:
         raise HTTPException(status_code=404, detail="Company not found")
 
-    # Check if company already has key_financial_data
+    # Step 1: Delete ALL existing entries with the same registration number first
+    # This prevents any duplicates from existing in the system
+    existing_entries_with_reg_num = (
+        db.query(KeyFinancialData)
+        .filter(KeyFinancialData.company_registered_number == new_number)
+        .all()
+    )
+    for entry in existing_entries_with_reg_num:
+        db.delete(entry)
+    
+    # Step 2: Delete the company's current key financial data if it exists and wasn't already deleted
     if company.key_financial_data_id:
-        # Update existing key financial data
-        key_data = (
+        remaining_old_data = (
             db.query(KeyFinancialData)
             .filter(KeyFinancialData.id == company.key_financial_data_id)
             .first()
         )
-        if not key_data:
-            raise HTTPException(status_code=404, detail="Key financial data not found")
-        
-        # Simply update the registration number on existing record
-        key_data.company_registered_number = new_number
-    else:
-        # Create new key financial data only if it doesn't exist
-        key_data = KeyFinancialData(
-            company_registered_number=new_number,
-            company_name=company.company_name if hasattr(company, 'company_name') else None,
-        )
-        db.add(key_data)
-        db.flush()  # Flush to get the ID without committing
-        
-        # Link company to new key financial data
-        company.key_financial_data_id = key_data.id
+        if remaining_old_data:
+            db.delete(remaining_old_data)
+    
+    # Flush all deletions before creating new entry
+    db.flush()
 
-    # Update company status
-    company.company_status = "Active" if new_number else "Inactive"
+    # Step 3: Create new key financial data with ONLY these three fields populated
+    # All other fields will be NULL by default
+    key_data = KeyFinancialData(
+        company_registered_number=new_number,
+        company_name=company.company_name if hasattr(company, 'company_name') else None,
+        company_status="Active"
+    )
+    db.add(key_data)
+    db.flush()  # Get the new ID
+    
+    # Step 4: Link company to the new key financial data entry
+    company.key_financial_data_id = key_data.id
     
     # Commit all changes
     db.commit()
@@ -839,7 +847,9 @@ def update_registration_number(company_id: int, data: dict = Body(...), db: Sess
     return {
         "message": "Registration number updated successfully",
         "new_registration_number": new_number,
-    }  
+    }
+
+
 
 @router.put("/update-approval-stage/{company_id}")
 def update_approval_stage(company_id: int, data: dict = Body(...), db: Session = Depends(get_db)):
