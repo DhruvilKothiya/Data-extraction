@@ -1,6 +1,7 @@
 import os
 import csv,requests
 from io import StringIO
+from datetime import datetime
 from fastapi import Body
 from fastapi.responses import StreamingResponse
 import pandas as pd
@@ -854,8 +855,10 @@ def update_registration_number(company_id: int, data: dict = Body(...), db: Sess
     db.add(key_data)
     db.flush()  # Get the new ID
     
-    # Step 4: Link company to the new key financial data entry
+    # Step 4: Link company to the new key financial data entry and mark as modified
     company.key_financial_data_id = key_data.id
+    # Explicitly mark the company record as modified (triggers last_modified update)
+    db.add(company)
     
     # Commit all changes
     db.commit()
@@ -864,6 +867,7 @@ def update_registration_number(company_id: int, data: dict = Body(...), db: Sess
     return {
         "message": "Registration number updated successfully",
         "new_registration_number": new_number,
+        "last_modified": company.last_modified.isoformat() if company.last_modified else None,
     }
 
 
@@ -884,10 +888,16 @@ def update_approval_stage(company_id: int, data: dict = Body(...), db: Session =
     if new_stage in [0, 2]:
         company.status = "Not Started"  
     
+    # Explicitly mark the company record as modified (triggers last_modified update)
+    db.add(company)
+    
     db.commit()
+    db.refresh(company)
+    
     return {
         "message": "Approval stage updated",
-        "new_status": company.status
+        "new_status": company.status,
+        "last_modified": company.last_modified.isoformat() if company.last_modified else None,
     }
     
     
