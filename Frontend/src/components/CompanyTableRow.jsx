@@ -458,7 +458,20 @@ const CompanyTableRow = ({
 
         <TableCell>
           <Box sx={getStatusStyles(company.status || "Not Started")}>
-            {company.status || "Not Started"}
+            {company.status === "Processing" ? (
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                <CircularProgress 
+                  size={12} 
+                  sx={{ 
+                    color: "#2e7d32",
+                    animation: "spin 1s linear infinite"
+                  }} 
+                />
+                Processing
+              </Box>
+            ) : (
+              company.status || "Not Started"
+            )}
           </Box>
         </TableCell>
       </TableRow>

@@ -36,7 +36,7 @@ export const useFileUpload = (onUploadSuccess) => {
 
       setUploadProgress(0);
       setUploadedFileName(response.data.filename);
-      toast.success("Uploaded Successfully");
+      toast.success("File uploaded successfully! Companies are now processing...");
       
       if (onUploadSuccess) {
         onUploadSuccess();
