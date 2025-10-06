@@ -278,6 +278,7 @@ const HomePage = () => {
                     companyData={companyData}
                     sortOrder={sortOrder}
                     setSortOrder={handleSortOrderChange}
+                    searchTerm={searchTerm}
                   />
                 </Box>
               </CardContent>

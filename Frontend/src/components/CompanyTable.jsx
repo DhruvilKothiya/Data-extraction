@@ -39,7 +39,8 @@ const CompanyTable = ({
   currentPage,
   companyData,
   sortOrder,
-  setSortOrder
+  setSortOrder,
+  searchTerm // Add searchTerm prop
 }) => {
   // 🔹 Frontend sorting state
   const [sortField, setSortField] = useState('company_name');
@@ -152,7 +153,7 @@ const CompanyTable = ({
             onSort={handleSort}
           />
           <TableBody>
-            {dataLoaded && companyData.map((company) => (
+            {dataLoaded && companyData.length > 0 && companyData.map((company) => (
               <CompanyTableRow
                 key={company.id}
                 company={company}
@@ -167,6 +168,84 @@ const CompanyTable = ({
                 onApprovalChange={onApprovalChange}
               />
             ))}
+            
+            {/* No Results Message */}
+            {dataLoaded && companyData.length === 0 && searchTerm && (
+              <tr>
+                <td colSpan="100%" style={{ padding: 0 }}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      py: 8,
+                      px: 4,
+                      textAlign: "center",
+                    }}
+                  >
+                    <Typography
+                      variant="h6"
+                      sx={{
+                        color: "text.secondary",
+                        fontWeight: 500,
+                        mb: 1,
+                      }}
+                    >
+                      No companies found
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: "text.secondary",
+                        maxWidth: 400,
+                      }}
+                    >
+                      No companies match your search for "{searchTerm}". Try adjusting your search terms or check the spelling.
+                    </Typography>
+                  </Box>
+                </td>
+              </tr>
+            )}
+            
+            {/* Empty State (no search, no data) */}
+            {dataLoaded && companyData.length === 0 && !searchTerm && (
+              <tr>
+                <td colSpan="100%" style={{ padding: 0 }}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      py: 8,
+                      px: 4,
+                      textAlign: "center",
+                    }}
+                  >
+                    <Typography
+                      variant="h6"
+                      sx={{
+                        color: "text.secondary",
+                        fontWeight: 500,
+                        mb: 1,
+                      }}
+                    >
+                      No companies available
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: "text.secondary",
+                        maxWidth: 400,
+                      }}
+                    >
+                      Upload a CSV file to start adding companies to your database.
+                    </Typography>
+                  </Box>
+                </td>
+              </tr>
+            )}
           </TableBody>
         </Table>
       </TableContainer>
