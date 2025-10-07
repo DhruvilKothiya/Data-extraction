@@ -269,14 +269,6 @@ def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
             ]
             full_address = ", ".join([part for part in address_parts if part])
 
-            # Create company record with "Processing" status before ML API call
-            company_record = CompanyData(
-                company_name=company_name,
-                status="Processing"
-            )
-            db.add(company_record)
-            db.commit()  # Commit to get the ID and show "Processing" status
-
             try:
                 api_response = requests.post(
                     PROCESS_COMPANY_API,
@@ -285,11 +277,11 @@ def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
                         "address": full_address
                     }
                 )
-                print(api_response.status_code, api_response.json())
-
+                print(api_response.status_code, api_response.json());
+           
                 if api_response.status_code == 200:
                     # Update status to "Done" after successful ML API call
-                    company_record.status = "Done"
+                    # company_record.status = "Done"
                     
                     csv_record = CSVFileData(
                         company_name=company_name,
@@ -304,13 +296,13 @@ def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
 
                 else:
                     # Update status to "Not Started" if API fails
-                    company_record.status = "Not Started"
+                    # company_record.status = "Not Started"
                     db.commit()
                     print(f"API failed for {company_name}: {api_response.status_code}")
 
             except Exception as e:
                 # Update status to "Not Started" if exception occurs
-                company_record.status = "Not Started"
+                # company_record.status = "Not Started"
                 db.commit()
                 print(f"Error fetching API data for {company_name}: {e}")
 
