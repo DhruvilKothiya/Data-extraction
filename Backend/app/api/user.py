@@ -259,16 +259,32 @@ def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
             if not company_name:
                 continue
 
-            company_name = company_name.replace("Ltd.", "Limited").replace("Ltd", "Limited")
+            # Normalize company name (so matching works consistently)
+            company_name = company_name.replace("Ltd.", "Limited").replace("Ltd", "Limited").strip()
 
             address_parts = [
                 row.get("Address1"),
                 row.get("Address2"),
                 row.get("Address3"),
                 row.get("City"),
-                row.get("County")
+                row.get("County"),
             ]
             full_address = ", ".join([part for part in address_parts if part])
+
+            # 🔹 1. Check if the company already exists
+            existing_company = (
+                db.query(CompanyData)
+                .filter(CompanyData.company_name == company_name)
+                .first()
+            )
+
+            if existing_company:
+                # 🔹 2. If it exists, set status to "Processing"
+                existing_company.status = "Processing"
+                existing_company.last_modified = datetime.utcnow()
+                db.commit()
+                db.refresh(existing_company)
+                print(f"Updated {company_name} status to Processing")
 
             try:
                 api_response = requests.post(
@@ -293,24 +309,20 @@ def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
                         county=row.get("County"),
                     )
                     db.add(csv_record)
-                    db.commit()  # commit both records
+                    db.commit()
 
                 else:
-                    # Update status to "Not Started" if API fails
-                    # company_record.status = "Not Started"
-                    db.commit()
                     print(f"API failed for {company_name}: {api_response.status_code}")
 
             except Exception as e:
-                # Update status to "Not Started" if exception occurs
-                # company_record.status = "Not Started"
-                db.commit()
                 print(f"Error fetching API data for {company_name}: {e}")
+                db.rollback()
 
-        return {"message": "File processed. Data saved in CSVFileData only when API returned 200."}
+        return {"message": "File processed successfully. Status updated to Processing for existing companies."}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to process file: {str(e)}")
+
 
 @router.post("/reprocess-company/{company_id}")
 def reprocess_company(company_id: int, db: Session = Depends(get_db)):
