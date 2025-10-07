@@ -331,16 +331,12 @@ def reprocess_company(company_id: int, db: Session = Depends(get_db)):
     if not registration_number:
         raise HTTPException(status_code=400, detail="Registration number not found")
    
-    # 2. First set status to "Not Started" to indicate re-run has been initiated
-    company.status = "Not Started"
-    db.commit()
-    
-    # 3. Now set status to Processing before calling ML API
+    # 2. Set status to "Processing" to indicate reprocessing has started
     company.status = "Processing"
     db.commit()
 
     try:
-        # 4. Call the external AI processing service
+        # 3. Call the external AI processing service
         api_response = requests.post(
            REPROCESS_COMPANY_API,
             json={"registration_id": registration_number}
@@ -362,10 +358,6 @@ def reprocess_company(company_id: int, db: Session = Depends(get_db)):
                 # Add more fields as needed
 
                 db.commit()
-                company.company_status = "Active"   
-            else:
-                company.company_status = "Inactive" 
-            company.status = "Done"
         else:
             company.status = "Not Started"
             print(f"API failed for {company.company_name}: {api_response.status_code}")

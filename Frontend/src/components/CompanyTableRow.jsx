@@ -451,13 +451,13 @@ const CompanyTableRow = ({
             >
               {company.status === "Processing"
                 ? "Processing..."
-                : "Not started"}
+                : "Processing..."}
             </Typography>
           )}
         </TableCell>
 
         <TableCell>
-          <Box sx={getStatusStyles(company.status || "Not Started")}>
+          <Box sx={getStatusStyles(company.status || "Processing")}>
             {company.status === "Processing" ? (
               <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
                 <CircularProgress 
@@ -470,7 +470,7 @@ const CompanyTableRow = ({
                 Processing
               </Box>
             ) : (
-              company.status || "Not Started"
+              company.status || "Processing"
             )}
           </Box>
         </TableCell>
