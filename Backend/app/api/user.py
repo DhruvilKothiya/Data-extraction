@@ -326,11 +326,15 @@ def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
 
 @router.post("/reprocess-company/{company_id}")
 def reprocess_company(company_id: int, db: Session = Depends(get_db)):
-    # 1. Get the company instance
+    # 1. Get the company instance and refresh to ensure latest data
     company = db.query(CompanyData).filter(CompanyData.id == company_id).first()
     if not company:
         raise HTTPException(status_code=404, detail="Company not found")
+    
+    # Refresh the company object to get the latest key_financial_data_id
+    db.refresh(company)
 
+    # 2. Get the key financial data with a fresh query
     key_data = (
         db.query(KeyFinancialData)
         .filter(KeyFinancialData.id == company.key_financial_data_id)
@@ -338,6 +342,9 @@ def reprocess_company(company_id: int, db: Session = Depends(get_db)):
     )
     if not key_data:
         raise HTTPException(status_code=404, detail="Key financial data not found for this company")
+    
+    # Refresh the key_data object to ensure we have the latest registration number
+    db.refresh(key_data)
 
     registration_number = key_data.company_registered_number or ""
     if not registration_number:
