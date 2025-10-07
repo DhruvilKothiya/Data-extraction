@@ -175,10 +175,11 @@ def get_company_data(
         key_financial_data = None
         if c.key_financial_data_id in key_data_map:
             kfd = key_data_map[c.key_financial_data_id]
-            status_value = "Active" if kfd.company_registered_number else "Inactive"
+            # Use the existing company_status from database instead of overriding it
+            status_value = kfd.company_status or ("Active" if kfd.company_registered_number else "Inactive")
 
-            # Update DB if mismatch
-            if kfd.company_status != status_value:
+            # Only update DB if company_status is None/empty, don't override existing status
+            if not kfd.company_status:
                 kfd.company_status = status_value
                 updated = True
 
