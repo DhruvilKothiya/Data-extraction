@@ -11,7 +11,7 @@ from app.core.config import REPROCESS_COMPANY_API,PROCESS_COMPANY_API
 from fastapi import APIRouter, Depends, HTTPException,Request,File, UploadFile,Response
 from sqlalchemy.orm import Session
 from app.db.session import SessionLocal
-from app.utils.jwt import create_access_token, decode_token
+from app.utils.jwt import create_access_token, decode_token, get_current_user
 from app.schemas.user import *
 from app.crud.user import create_user
 from app.models.user import User
@@ -100,6 +100,7 @@ def reset_password(data: ResetPasswordSchema, db: Session = Depends(get_db)):
 
 @router.get("/company-data")
 def get_company_data(
+    current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
     page: int = 1,
     per_page: int = 100,
@@ -245,7 +246,11 @@ def get_company_data(
 
 
 @router.post("/upload-file")
-def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
+def upload_file(
+    current_user: dict = Depends(get_current_user),
+    file: UploadFile = File(...), 
+    db: Session = Depends(get_db)
+):
     try:
         if not file.filename.endswith(".csv"):
             raise HTTPException(status_code=400, detail="Only CSV files are supported")
@@ -325,7 +330,11 @@ def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
 
 
 @router.post("/reprocess-company/{company_id}")
-def reprocess_company(company_id: int, db: Session = Depends(get_db)):
+def reprocess_company(
+    company_id: int,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     # 1. Get the company instance and refresh to ensure latest data
     company = db.query(CompanyData).filter(CompanyData.id == company_id).first()
     if not company:
@@ -394,7 +403,11 @@ def reprocess_company(company_id: int, db: Session = Depends(get_db)):
     }
 
 @router.get("/key-financial-data/{company_id}")
-def get_key_financial_data(company_id: int, db: Session = Depends(get_db)):
+def get_key_financial_data(
+    company_id: int,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     company = db.query(CompanyData).filter(CompanyData.id == company_id).first()
 
     if not company:
@@ -449,6 +462,7 @@ def extract_year_values(json_data, fixed_years):
 @router.post("/export-company-data")
 def export_selected_key_financial_data(
     data: dict = Body(...),
+    current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     ids = data.get("ids", [])
@@ -817,7 +831,12 @@ def export_selected_key_financial_data(
     )  
       
 @router.put("/update-registration-number/{company_id}")
-def update_registration_number(company_id: int, data: dict = Body(...), db: Session = Depends(get_db)):
+def update_registration_number(
+    company_id: int, 
+    data: dict = Body(...),
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     new_number = data.get("registration_number")
     if not new_number:
         raise HTTPException(status_code=400, detail="registration_number is required")
@@ -877,7 +896,12 @@ def update_registration_number(company_id: int, data: dict = Body(...), db: Sess
 
 
 @router.put("/update-approval-stage/{company_id}")
-def update_approval_stage(company_id: int, data: dict = Body(...), db: Session = Depends(get_db)):
+def update_approval_stage(
+    company_id: int, 
+    data: dict = Body(...),
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     new_stage = data.get("approval_stage")
     if new_stage not in [0, 1, 2]:
         raise HTTPException(status_code=400, detail="Invalid approval stage")
@@ -906,7 +930,11 @@ def update_approval_stage(company_id: int, data: dict = Body(...), db: Session =
     
     
 @router.get("/people/{company_registered_number}")
-def get_people_for_company(company_registered_number: str, db: Session = Depends(get_db)):
+def get_people_for_company(
+    company_registered_number: str,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
 
     # Check if the company exists in key_financial_data table
     company_exists = (
@@ -944,7 +972,11 @@ def get_people_for_company(company_registered_number: str, db: Session = Depends
     return result
 
 @router.get("/summary-notes/{company_id}")
-def get_summary_notes(company_id: int, db: Session = Depends(get_db)):
+def get_summary_notes(
+    company_id: int,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     """Get summary notes for a company by company ID"""
     # First get the company's registered number
     company = db.query(CompanyData).filter(CompanyData.id == company_id).first()
@@ -977,7 +1009,8 @@ def get_summary_notes(company_id: int, db: Session = Depends(get_db)):
 @router.post("/summary-notes/{company_id}")
 def create_or_update_summary_notes(
     company_id: int, 
-    data: dict = Body(...), 
+    data: dict = Body(...),
+    current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Create or update summary notes for a company, skipping exact duplicates"""
@@ -1022,7 +1055,11 @@ def create_or_update_summary_notes(
         return {"message": "Summary created successfully"}
 
 @router.get("/summary-notes-by-registration/{registration_number}")
-def get_summary_by_registration(registration_number: str, db: Session = Depends(get_db)):
+def get_summary_by_registration(
+    registration_number: str,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     """Get summary notes by registration number directly"""
     summary_notes = db.query(SummaryNotes).filter(
         SummaryNotes.company_registered_number == registration_number
@@ -1039,7 +1076,11 @@ def get_summary_by_registration(registration_number: str, db: Session = Depends(
     }
     
 @router.get("/company-pdfs/{registration_number}")
-def get_company_pdfs(registration_number: str, db: Session = Depends(get_db)):
+def get_company_pdfs(
+    registration_number: str,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     """Get PDF links for a company by registration number"""
     company_pdfs = db.query(CompanyPDFs).filter(
         CompanyPDFs.company_registered_number == registration_number
