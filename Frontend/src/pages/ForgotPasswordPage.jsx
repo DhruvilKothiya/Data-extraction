@@ -8,7 +8,7 @@ import {
   Typography,
   useTheme,
 } from "@mui/material";
-import axios from "axios";
+import axiosInstance from "../utils/axiosConfig";
 import { toast } from "react-toastify"; // ✅ Toast import
 
 const ForgotPasswordPage = () => {
@@ -18,10 +18,7 @@ const ForgotPasswordPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post(
-        `${process.env.REACT_APP_API_URL}/forgot-password`,
-        { email }
-      );
+      const response = await axiosInstance.post('/forgot-password', { email });
       toast.success("Reset link sent! Check your email."); 
     } catch (error) {
       toast.error("Failed to send reset link.");  

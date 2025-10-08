@@ -18,7 +18,7 @@ import {
   Save as SaveIcon,
   Cancel as CancelIcon,
 } from "@mui/icons-material";
-import axios from "axios";
+import axiosInstance from "../utils/axiosConfig";
 import { toast } from "react-toastify";
 
 const SummaryDialog = ({ open, onClose, company, isSmall = false }) => {
@@ -39,13 +39,7 @@ const SummaryDialog = ({ open, onClose, company, isSmall = false }) => {
       setLoading(true);
       setError("");
 
-      const token = localStorage.getItem("token");
-      const response = await axios.get(
-        `${process.env.REACT_APP_API_URL}/summary-notes/${company.id}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const response = await axiosInstance.get(`/summary-notes/${company.id}`);
 
       setSummary(response.data.summary || "No summary available");
       setEditedSummary(response.data.summary || "");
@@ -61,14 +55,10 @@ const SummaryDialog = ({ open, onClose, company, isSmall = false }) => {
   const handleSave = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("token");
 
-      await axios.post(
-        `${process.env.REACT_APP_API_URL}/summary-notes/${company.id}`,
-        { summary: editedSummary },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+      await axiosInstance.post(
+        `/summary-notes/${company.id}`,
+        { summary: editedSummary }
       );
 
       setSummary(editedSummary);

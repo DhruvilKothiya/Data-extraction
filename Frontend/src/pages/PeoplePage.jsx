@@ -35,7 +35,7 @@ import {
   ArrowBack as ArrowBackIcon,
   Home as HomeIcon,
 } from "@mui/icons-material";
-import axios from "axios";
+import axiosInstance from "../utils/axiosConfig";
 import { toast } from "react-toastify";
 
 const PeoplePage = () => {
@@ -93,19 +93,7 @@ const PeoplePage = () => {
 
 const fetchPeopleData = async () => {
   try {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      navigate("/signin");
-      return;
-    }
-    const response = await axios.get(
-      `${process.env.REACT_APP_API_URL}/people/${companyRegisteredNumber}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
+    const response = await axiosInstance.get(`/people/${companyRegisteredNumber}`);
     setPeopleData(response.data);
   } catch (error) {
     setError("Failed to fetch people data. Please try again.");

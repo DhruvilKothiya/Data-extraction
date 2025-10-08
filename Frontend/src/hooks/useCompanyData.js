@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import axios from 'axios';
+import axiosInstance from '../utils/axiosConfig';
 import { toast } from 'react-toastify';
 import {
   setSearchTerm,
@@ -37,7 +37,6 @@ export const useCompanyData = () => {
   const fetchCompanyData = async (page = 1, search = null, order='asc', show_inactive=false, approval_filter='all') => {
     try {
       setDataLoaded(false);
-      const token = localStorage.getItem("token");
       
       // Use passed search param or current searchTerm state
       const searchQuery = search !== null ? search : searchTerm;
@@ -54,14 +53,8 @@ export const useCompanyData = () => {
       if (searchQuery && searchQuery.trim()) {
         params.search = searchQuery.trim();
       }
-      console.log("Test")
-      const response = await axios.get(
-        `${process.env.REACT_APP_API_URL}/company-data`,
-        {
-          params,
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      
+      const response = await axiosInstance.get('/company-data', { params });
    
       setCompanyData(
         response.data.data.map((company) => ({
@@ -135,12 +128,9 @@ export const useCompanyData = () => {
         )
       );
       
-      const token = localStorage.getItem("token");
-
-      const response = await axios.post(
-        `${process.env.REACT_APP_API_URL}/reprocess-company/${companyId}`,
-        {}, // Empty body since registration number is retrieved from DB
-        { headers: { Authorization: `Bearer ${token}` } }
+      const response = await axiosInstance.post(
+        `/reprocess-company/${companyId}`,
+        {} // Empty body since registration number is retrieved from DB
       );
 
       // Update with the final status from backend
@@ -171,11 +161,9 @@ export const useCompanyData = () => {
 
   const handleRegistrationUpdate = async (companyId, newNumber) => {
     try {
-      const token = localStorage.getItem("token");
-      const response = await axios.put(
-        `${process.env.REACT_APP_API_URL}/update-registration-number/${companyId}`,
-        { registration_number: newNumber },
-        { headers: { Authorization: `Bearer ${token}` } }
+      const response = await axiosInstance.put(
+        `/update-registration-number/${companyId}`,
+        { registration_number: newNumber }
       );
   
       setCompanyData((prev) =>
@@ -207,11 +195,9 @@ export const useCompanyData = () => {
 
   const handleApprovalChange = async (companyId, newStage) => {
     try {
-      const token = localStorage.getItem("token");
-      const response = await axios.put(
-        `${process.env.REACT_APP_API_URL}/update-approval-stage/${companyId}`,
-        { approval_stage: newStage },
-        { headers: { Authorization: `Bearer ${token}` } }
+      const response = await axiosInstance.put(
+        `/update-approval-stage/${companyId}`,
+        { approval_stage: newStage }
       );
 
       const shouldSetNotStarted = newStage === 0 || newStage === 2;

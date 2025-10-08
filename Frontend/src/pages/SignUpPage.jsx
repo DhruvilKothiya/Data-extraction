@@ -14,7 +14,7 @@ import {
 } from "@mui/material";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import axiosInstance from "../utils/axiosConfig";
 import { toast } from "react-toastify"; 
 
 const SignUpPage = () => {
@@ -57,16 +57,13 @@ const SignUpPage = () => {
     }
 
     try {
-      const response = await axios.post(
-        `${process.env.REACT_APP_API_URL}/signup`,
-        {
-          first_name: formData.firstName,
-          last_name: formData.lastName,
-          email: formData.email,
-          password: formData.password,
-          terms_accepted: formData.termsAccepted,
-        }
-      );
+      const response = await axiosInstance.post('/signup', {
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        email: formData.email,
+        password: formData.password,
+        terms_accepted: formData.termsAccepted,
+      });
 
       toast.success("User registered successfully!"); 
       navigate("/signin");

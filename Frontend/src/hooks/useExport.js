@@ -1,6 +1,6 @@
 // hooks/useExport.js
 import { useState } from 'react';
-import axios from 'axios';
+import axiosInstance from '../utils/axiosConfig';
 import { toast } from 'react-toastify';
 
 export const useExport = () => {
@@ -18,9 +18,8 @@ export const useExport = () => {
     if (selectedIds.length === 0) return;
 
     try {
-      const token = localStorage.getItem("token");
-      const response = await axios.post(
-        `${process.env.REACT_APP_API_URL}/export-company-data`,
+      const response = await axiosInstance.post(
+        '/export-company-data',
         {
           ids: selectedIds,
           key_financial: includeKeyData,
@@ -30,7 +29,6 @@ export const useExport = () => {
         },
         {
           headers: {
-            Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
           responseType: "blob",

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import axios from "axios";
+import axiosInstance from "../utils/axiosConfig";
 import { useNavigationHelper } from "../hooks/useNavigationHelper";
 import {
   Box,
@@ -41,15 +41,7 @@ const KeyFinancialDataPage = () => {
 
   const fetchKeyData = async () => {
     try {
-      const token = localStorage.getItem("token");
-      const response = await axios.get(
-        `${process.env.REACT_APP_API_URL}/key-financial-data/${id}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await axiosInstance.get(`/key-financial-data/${id}`);
       setData(response.data);
     } catch (error) {
       toast.error("Failed to load key financial data");

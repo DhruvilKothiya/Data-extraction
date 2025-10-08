@@ -1,6 +1,6 @@
 // hooks/useFileUpload.js
 import { useState } from 'react';
-import axios from 'axios';
+import axiosInstance from '../utils/axiosConfig';
 import { toast } from 'react-toastify';
 
 export const useFileUpload = (onUploadSuccess) => {
@@ -15,15 +15,13 @@ export const useFileUpload = (onUploadSuccess) => {
     formData.append("file", file);
 
     try {
-      const token = localStorage.getItem("token");
       setUploading(true);
-      const response = await axios.post(
-        `${process.env.REACT_APP_API_URL}/upload-file`,
+      const response = await axiosInstance.post(
+        '/upload-file',
         formData,
         {
           headers: {
             "Content-Type": "multipart/form-data",
-            Authorization: `Bearer ${token}`,
           },
           onUploadProgress: (progressEvent) => {
             const percent = Math.round(

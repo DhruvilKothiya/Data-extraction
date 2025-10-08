@@ -9,7 +9,7 @@ import {
   useTheme,
 } from "@mui/material";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import axios from "axios";
+import axiosInstance from "../utils/axiosConfig";
 import { toast } from "react-toastify"; // ✅ Toast import
 
 const ResetPasswordPage = () => {
@@ -29,7 +29,7 @@ const ResetPasswordPage = () => {
     }
 
     try {
-      await axios.post(`${process.env.REACT_APP_API_URL}/reset-password`, {
+      await axiosInstance.post('/reset-password', {
         token,
         new_password: newPassword,
       });

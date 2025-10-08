@@ -14,7 +14,7 @@ import {
 } from "@mui/material";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import axiosInstance from "../utils/axiosConfig";
 import { toast } from "react-toastify"; // ✅ Toastify import
 
 const SignInPage = () => {
@@ -28,13 +28,10 @@ const SignInPage = () => {
     e.preventDefault();
 
     try {
-      const response = await axios.post(
-        `${process.env.REACT_APP_API_URL}/signin`,
-        {
-          email,
-          password,
-        }
-      );
+      const response = await axiosInstance.post('/signin', {
+        email,
+        password,
+      });
 
       const token = response.data.access_token;
       localStorage.setItem("token", token);

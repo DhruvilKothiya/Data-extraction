@@ -1,6 +1,6 @@
 // hooks/useSummary.js
 import { useState } from 'react';
-import axios from 'axios';
+import axiosInstance from '../utils/axiosConfig';
 import { toast } from 'react-toastify';
 
 export const useSummary = () => {
@@ -10,13 +10,7 @@ export const useSummary = () => {
   const fetchSummary = async (companyId) => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      const response = await axios.get(
-        `${process.env.REACT_APP_API_URL}/summary-notes/${companyId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      );
+      const response = await axiosInstance.get(`/summary-notes/${companyId}`);
       
       setSummaryData(prev => ({
         ...prev,
@@ -36,14 +30,10 @@ export const useSummary = () => {
   const updateSummary = async (companyId, summary) => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
       
-      await axios.post(
-        `${process.env.REACT_APP_API_URL}/summary-notes/${companyId}`,
-        { summary },
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
+      await axiosInstance.post(
+        `/summary-notes/${companyId}`,
+        { summary }
       );
       
       // Update local state
