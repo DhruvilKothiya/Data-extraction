@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 SECRET_KEY = "your-secret-key"
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 2
+ACCESS_TOKEN_EXPIRE_MINUTES = 1440  # 1 day = 24 hours * 60 minutes 
 
 security = HTTPBearer()
 
