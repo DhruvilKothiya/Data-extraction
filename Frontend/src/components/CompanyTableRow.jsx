@@ -427,7 +427,6 @@ const CompanyTableRow = ({
               onChange={(e) =>
                 onApprovalChange(company.id, parseInt(e.target.value))
               }
-              disabled={isInactive}
               variant="standard"
               sx={{
                 minWidth: 100,
