@@ -76,8 +76,9 @@ const CompanyTable = ({
   const handleSort = (field) => {
     const newOrder = sortField === field && sortOrder === 'asc' ? 'desc' : 'asc';
     setSortField(field);
+    // Use the parent's setSortOrder handler instead of calling fetchCompanyData directly
+    // This ensures all parameters (including showInactive) are properly passed
     setSortOrder(newOrder);
-    fetchCompanyData(currentPage,null,newOrder)
   };
 
   // 🔹 Pagination handler - calls parent's onPageChange to trigger API call
