@@ -14,14 +14,18 @@ import {
 import { toast } from "react-toastify";
 
 const formatDate = (date) =>
-  date ? new Date(date).toLocaleDateString() : "N/A";
+  date ? new Date(date).toLocaleDateString() : "Not available";
 const formatCurrency = (value) =>
-  value !== null
+  value !== null && value !== undefined
     ? Number(value).toLocaleString(undefined, { minimumFractionDigits: 2 })
-    : "N/A";
+    : "0";
+const formatString = (value) =>
+  value !== null && value !== undefined && value !== "" ? value : "Not available";
+const formatNumber = (value) =>
+  value !== null && value !== undefined ? value : "0";
 
 const renderJsonData = (json) => {
-  if (!json || typeof json !== "object") return "N/A";
+  if (!json || typeof json !== "object") return "0";
   return (
     <Box component="ul" sx={{ pl: 3 }}>
       {Object.entries(json).map(([year, val]) => (
@@ -83,18 +87,18 @@ const KeyFinancialDataPage = () => {
             <Grid container spacing={2}>
               <Grid item xs={12} sm={6}>
                 <Typography>
-                  <strong>Company Name:</strong> {data.company_name || "N/A"}
+                  <strong>Company Name:</strong> {formatString(data.company_name)}
                 </Typography>
               </Grid>
               <Grid item xs={12} sm={6}>
                 <Typography>
                   <strong>Registered Number:</strong>{" "}
-                  {data.company_registered_number || "N/A"}
+                  {formatString(data.company_registered_number)}
                 </Typography>
               </Grid>
               <Grid item xs={12} sm={6}>
                 <Typography>
-                  <strong>Status:</strong> {data.company_status || "N/A"}
+                  <strong>Status:</strong> {formatString(data.company_status)}
                 </Typography>
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -112,28 +116,28 @@ const KeyFinancialDataPage = () => {
               <Grid item xs={12} sm={6}>
                 <Typography>
                   <strong>Current Company Name:</strong>{" "}
-                  {data.current_company_name || "N/A"}
+                  {formatString(data.current_company_name)}
                 </Typography>
               </Grid>
               <Grid item xs={12} sm={6}>
                 <Typography>
-                  <strong>SIC Code 1:</strong> {data.sic1 || "N/A"}
+                  <strong>SIC Code 1:</strong> {formatNumber(data.sic1)}
                 </Typography>
               </Grid>
               <Grid item xs={12} sm={6}>
                 <Typography>
-                  <strong>SIC Code 2:</strong> {data.sic2 || "N/A"}
+                  <strong>SIC Code 2:</strong> {formatNumber(data.sic2)}
                 </Typography>
               </Grid>
               <Grid item xs={12} sm={6}>
                 <Typography>
-                  <strong>Location:</strong> {data.location || "N/A"}
+                  <strong>Location:</strong> {formatString(data.location)}
                 </Typography>
               </Grid>
               <Grid item xs={12} sm={6}>
                 <Typography>
                   <strong>Nature of Business:</strong>{" "}
-                  {data.nature_of_business || "N/A"}
+                  {formatString(data.nature_of_business)}
                 </Typography>
               </Grid>
             </Grid>
@@ -150,25 +154,25 @@ const KeyFinancialDataPage = () => {
             <Grid container spacing={2}>
               <Grid item xs={12} sm={6}>
                 <Typography>
-                  <strong>Parent Company:</strong> {data.parent_company || "N/A"}
+                  <strong>Parent Company:</strong> {formatString(data.parent_company)}
                 </Typography>
               </Grid>
               <Grid item xs={12} sm={6}>
                 <Typography>
                   <strong>Nationality of Parent:</strong>{" "}
-                  {data.nationality_of_parent || "N/A"}
+                  {formatString(data.nationality_of_parent)}
                 </Typography>
               </Grid>
               <Grid item xs={12} sm={6}>
                 <Typography>
                   <strong>Auditor Name (Latest):</strong>{" "}
-                  {data.auditor_name_latest || "N/A"}
+                  {formatString(data.auditor_name_latest)}
                 </Typography>
               </Grid>
               <Grid item xs={12} sm={6}>
                 <Typography>
                   <strong>Auditor Firm (Latest):</strong>{" "}
-                  {data.auditor_firm_latest || "N/A"}
+                  {formatString(data.auditor_firm_latest)}
                 </Typography>
               </Grid>
             </Grid>
@@ -349,7 +353,7 @@ const KeyFinancialDataPage = () => {
               <Grid item xs={12}>
                 <Typography>
                   <strong>Number of UK Defined Benefit Arrangements:</strong>{" "}
-                  {data.number_of_uk_defined_benefit_arrangements || "N/A"}
+                  {formatNumber(data.number_of_uk_defined_benefit_arrangements)}
                 </Typography>
               </Grid>
               
@@ -367,17 +371,17 @@ const KeyFinancialDataPage = () => {
                     </Grid>
                     <Grid item xs={12} sm={6}>
                       <Typography>
-                        <strong>Status:</strong> {data.Status_of_Defined_Benefit_Arrangement_1 || "N/A"}
+                        <strong>Status:</strong> {formatString(data.Status_of_Defined_Benefit_Arrangement_1)}
                       </Typography>
                     </Grid>
                     <Grid item xs={12} sm={6}>
                       <Typography>
-                        <strong>Scheme Actuary:</strong> {data.scheme_actuary_1 || "N/A"}
+                        <strong>Scheme Actuary:</strong> {formatString(data.scheme_actuary_1)}
                       </Typography>
                     </Grid>
                     <Grid item xs={12} sm={6}>
                       <Typography>
-                        <strong>Actuary Firm:</strong> {data.scheme_actuary_firm_1 || "N/A"}
+                        <strong>Actuary Firm:</strong> {formatString(data.scheme_actuary_firm_1)}
                       </Typography>
                     </Grid>
                   </Grid>
@@ -398,17 +402,17 @@ const KeyFinancialDataPage = () => {
                     </Grid>
                     <Grid item xs={12} sm={6}>
                       <Typography>
-                        <strong>Status:</strong> {data.Status_of_Defined_Benefit_Arrangement_2 || "N/A"}
+                        <strong>Status:</strong> {formatString(data.Status_of_Defined_Benefit_Arrangement_2)}
                       </Typography>
                     </Grid>
                     <Grid item xs={12} sm={6}>
                       <Typography>
-                        <strong>Scheme Actuary:</strong> {data.scheme_actuary_2 || "N/A"}
+                        <strong>Scheme Actuary:</strong> {formatString(data.scheme_actuary_2)}
                       </Typography>
                     </Grid>
                     <Grid item xs={12} sm={6}>
                       <Typography>
-                        <strong>Actuary Firm:</strong> {data.scheme_actuary_firm_2 || "N/A"}
+                        <strong>Actuary Firm:</strong> {formatString(data.scheme_actuary_firm_2)}
                       </Typography>
                     </Grid>
                   </Grid>
@@ -429,17 +433,17 @@ const KeyFinancialDataPage = () => {
                     </Grid>
                     <Grid item xs={12} sm={6}>
                       <Typography>
-                        <strong>Status:</strong> {data.Status_of_Defined_Benefit_Arrangement_3 || "N/A"}
+                        <strong>Status:</strong> {formatString(data.Status_of_Defined_Benefit_Arrangement_3)}
                       </Typography>
                     </Grid>
                     <Grid item xs={12} sm={6}>
                       <Typography>
-                        <strong>Scheme Actuary:</strong> {data.scheme_actuary_3 || "N/A"}
+                        <strong>Scheme Actuary:</strong> {formatString(data.scheme_actuary_3)}
                       </Typography>
                     </Grid>
                     <Grid item xs={12} sm={6}>
                       <Typography>
-                        <strong>Actuary Firm:</strong> {data.scheme_actuary_firm_3 || "N/A"}
+                        <strong>Actuary Firm:</strong> {formatString(data.scheme_actuary_firm_3)}
                       </Typography>
                     </Grid>
                   </Grid>
