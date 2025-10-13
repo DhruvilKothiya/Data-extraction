@@ -109,6 +109,68 @@ const KeyFinancialDataPage = () => {
                   {formatDate(data.latest_accounts_date)}
                 </Typography>
               </Grid>
+              <Grid item xs={12} sm={6}>
+                <Typography>
+                  <strong>Current Company Name:</strong>{" "}
+                  {data.current_company_name || "N/A"}
+                </Typography>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Typography>
+                  <strong>SIC Code 1:</strong> {data.sic1 || "N/A"}
+                </Typography>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Typography>
+                  <strong>SIC Code 2:</strong> {data.sic2 || "N/A"}
+                </Typography>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Typography>
+                  <strong>Location:</strong> {data.location || "N/A"}
+                </Typography>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Typography>
+                  <strong>Nature of Business:</strong>{" "}
+                  {data.nature_of_business || "N/A"}
+                </Typography>
+              </Grid>
+            </Grid>
+          </Card>
+        </Grid>
+
+        {/* Parent Company & Auditor Information */}
+        <Grid item xs={12}>
+          <Card variant="outlined" sx={{ p: 3, borderRadius: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              🏢 Parent Company & Auditor Information
+            </Typography>
+            <Divider sx={{ mb: 2 }} />
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <Typography>
+                  <strong>Parent Company:</strong> {data.parent_company || "N/A"}
+                </Typography>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Typography>
+                  <strong>Nationality of Parent:</strong>{" "}
+                  {data.nationality_of_parent || "N/A"}
+                </Typography>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Typography>
+                  <strong>Auditor Name (Latest):</strong>{" "}
+                  {data.auditor_name_latest || "N/A"}
+                </Typography>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Typography>
+                  <strong>Auditor Firm (Latest):</strong>{" "}
+                  {data.auditor_firm_latest || "N/A"}
+                </Typography>
+              </Grid>
             </Grid>
           </Card>
         </Grid>
@@ -256,7 +318,133 @@ const KeyFinancialDataPage = () => {
                   <strong>Other Assets:</strong>{" "}
                   {formatCurrency(data.assets_other)}
                 </Typography>
+                <Typography>
+                  <strong>Diversified Growth:</strong>{" "}
+                  {formatCurrency(data.assets_diversified_growth)}
+                </Typography>
+                <Typography>
+                  <strong>Alternatives:</strong>{" "}
+                  {formatCurrency(data.assets_alternatives)}
+                </Typography>
+                <Typography>
+                  <strong>Insurance Contracts:</strong>{" "}
+                  {formatCurrency(data.assets_insurance_contracts)}
+                </Typography>
               </Grid>
+            </Grid>
+          </Card>
+        </Grid>
+
+        {/* Defined Benefit Arrangements */}
+        <Grid item xs={12}>
+          <Card
+            variant="outlined"
+            sx={{ p: 3, borderRadius: 3, backgroundColor: "#fff8f0" }}
+          >
+            <Typography variant="h6" gutterBottom>
+              📋 Defined Benefit Arrangements
+            </Typography>
+            <Divider sx={{ mb: 2 }} />
+            <Grid container spacing={2}>
+              <Grid item xs={12}>
+                <Typography>
+                  <strong>Number of UK Defined Benefit Arrangements:</strong>{" "}
+                  {data.number_of_uk_defined_benefit_arrangements || "N/A"}
+                </Typography>
+              </Grid>
+              
+              {/* Arrangement 1 */}
+              {data.Name_of_Defined_Benefit_Arrangement_1 && (
+                <Grid item xs={12}>
+                  <Typography variant="subtitle1" sx={{ mt: 2, mb: 1, fontWeight: 'bold' }}>
+                    Arrangement 1:
+                  </Typography>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} sm={6}>
+                      <Typography>
+                        <strong>Name:</strong> {data.Name_of_Defined_Benefit_Arrangement_1}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <Typography>
+                        <strong>Status:</strong> {data.Status_of_Defined_Benefit_Arrangement_1 || "N/A"}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <Typography>
+                        <strong>Scheme Actuary:</strong> {data.scheme_actuary_1 || "N/A"}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <Typography>
+                        <strong>Actuary Firm:</strong> {data.scheme_actuary_firm_1 || "N/A"}
+                      </Typography>
+                    </Grid>
+                  </Grid>
+                </Grid>
+              )}
+              
+              {/* Arrangement 2 */}
+              {data.Name_of_Defined_Benefit_Arrangement_2 && (
+                <Grid item xs={12}>
+                  <Typography variant="subtitle1" sx={{ mt: 2, mb: 1, fontWeight: 'bold' }}>
+                    Arrangement 2:
+                  </Typography>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} sm={6}>
+                      <Typography>
+                        <strong>Name:</strong> {data.Name_of_Defined_Benefit_Arrangement_2}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <Typography>
+                        <strong>Status:</strong> {data.Status_of_Defined_Benefit_Arrangement_2 || "N/A"}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <Typography>
+                        <strong>Scheme Actuary:</strong> {data.scheme_actuary_2 || "N/A"}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <Typography>
+                        <strong>Actuary Firm:</strong> {data.scheme_actuary_firm_2 || "N/A"}
+                      </Typography>
+                    </Grid>
+                  </Grid>
+                </Grid>
+              )}
+              
+              {/* Arrangement 3 */}
+              {data.Name_of_Defined_Benefit_Arrangement_3 && (
+                <Grid item xs={12}>
+                  <Typography variant="subtitle1" sx={{ mt: 2, mb: 1, fontWeight: 'bold' }}>
+                    Arrangement 3:
+                  </Typography>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} sm={6}>
+                      <Typography>
+                        <strong>Name:</strong> {data.Name_of_Defined_Benefit_Arrangement_3}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <Typography>
+                        <strong>Status:</strong> {data.Status_of_Defined_Benefit_Arrangement_3 || "N/A"}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <Typography>
+                        <strong>Scheme Actuary:</strong> {data.scheme_actuary_3 || "N/A"}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <Typography>
+                        <strong>Actuary Firm:</strong> {data.scheme_actuary_firm_3 || "N/A"}
+                      </Typography>
+                    </Grid>
+                  </Grid>
+                </Grid>
+              )}
             </Grid>
           </Card>
         </Grid>
