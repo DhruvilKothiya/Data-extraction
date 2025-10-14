@@ -1090,3 +1090,189 @@ def get_company_pdfs(
         return {"pdf_links": []}
     
     return {"pdf_links": company_pdfs.pdf_links}
+
+@router.post("/import-key-financial-data")
+def import_key_financial_data(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if not file.filename.endswith(('.xlsx', '.xls')):
+        raise HTTPException(status_code=400, detail="Only Excel files (.xlsx, .xls) are supported")
+    
+    try:
+        contents = file.file.read()
+        excel_data = pd.read_excel(BytesIO(contents), sheet_name="Main Data")
+        print("excel_data",excel_data)
+
+        update_count = 0
+        error_rows = []
+
+        for index, row in excel_data.iterrows():
+            company_name = row.get("Company Name")
+            print(company_name)
+            if pd.isna(company_name):
+                continue
+
+            company = db.query(CompanyData).filter(
+                CompanyData.company_name == company_name
+            ).first()
+            print(company)
+
+            if not company or not company.key_financial_data_id:
+                error_rows.append(f"Row {index + 2}: Company '{company_name}' not found")
+                continue
+
+            key_data = db.query(KeyFinancialData).filter(
+                KeyFinancialData.id == company.key_financial_data_id
+            ).first()
+            print("key_data",key_data)
+
+            if not key_data:
+                error_rows.append(f"Row {index + 2}: No financial data for '{company_name}'")
+                continue
+
+            changed = False
+
+            def safe_update(field_name, excel_column):
+                nonlocal changed
+                if excel_column in row and not pd.isna(row[excel_column]):
+                    new_value = row[excel_column]
+                    old_value = getattr(key_data, field_name)
+                    
+                    # Handle different data types properly
+                    if field_name in ['employer_contrib_latest_year', 'employer_contrib_previous_year', 
+                                    'benefits_paid', 'expenses_paid_latest_year', 'expenses_paid_previous_year',
+                                    'defined_contrib_paid', 'assets_equities', 'assets_bonds', 'assets_real_estate',
+                                    'assets_ldi', 'assets_cash', 'assets_other', 'assets_diversified_growth',
+                                    'assets_alternatives', 'assets_insurance_contracts']:
+                        # For numeric fields, convert to float and compare
+                        try:
+                            new_value = float(new_value)
+                            old_value = float(old_value) if old_value is not None else 0.0
+                            if abs(old_value - new_value) > 0.01:  # Allow small float precision differences
+                                print(f"Updating {field_name}: {old_value} -> {new_value}")
+                                setattr(key_data, field_name, new_value)
+                                changed = True
+                        except (ValueError, TypeError):
+                            print(f"Error converting {field_name} values to float: old={old_value}, new={new_value}")
+                    else:
+                        # For string/other fields, use string comparison
+                        old_str = str(old_value) if old_value is not None else ""
+                        new_str = str(new_value)
+                        if old_str != new_str:
+                            print(f"Updating {field_name}: '{old_str}' -> '{new_str}'")
+                            setattr(key_data, field_name, new_value)
+                            changed = True
+
+            # Update standard columns
+            column_map = {
+                "company_status": "Company Status",
+                "company_registered_number": "Company Registered Number",
+                "incorporation_date": "Incorporation Date",
+                "latest_accounts_date": "Date of Latest Accounts",
+                "parent_company": "Parent Company",
+                "nationality_of_parent": "Nationality of Parent",
+                "auditor_name_latest": "Auditor Name",
+                "auditor_firm_latest": "Auditor Firm",
+                "number_of_uk_defined_benefit_arrangements": "Number of UK DB Arrangements",
+                "Name_of_Defined_Benefit_Arrangement_1": "Name DB Arrangement 1",
+                "scheme_actuary_1": "Scheme Actuary 1",
+                "scheme_actuary_firm_1": "Firm 1",
+                "Status_of_Defined_Benefit_Arrangement_1": "Status 1",
+                "Name_of_Defined_Benefit_Arrangement_2": "Name DB Arrangement 2",
+                "scheme_actuary_2": "Scheme Actuary 2",
+                "scheme_actuary_firm_2": "Firm 2",
+                "Status_of_Defined_Benefit_Arrangement_2": "Status 2",
+                "Name_of_Defined_Benefit_Arrangement_3": "Name DB Arrangement 3",
+                "scheme_actuary_3": "Scheme Actuary 3",
+                "scheme_actuary_firm_3": "Firm 3",
+                "Status_of_Defined_Benefit_Arrangement_3": "Status 3",
+                "employer_contrib_latest_year": "Employer Contributions Latest",
+                "employer_contrib_previous_year": "Employer Contributions Previous",
+                "benefits_paid": "Benefits Paid",
+                "expenses_paid_latest_year": "Expenses Latest",
+                "expenses_paid_previous_year": "Expenses Previous",
+                "defined_contrib_paid": "Defined Contribution Paid",
+                "assets_equities": "Equities",
+                "assets_bonds": "Bonds",
+                "assets_real_estate": "Real Estate",
+                "assets_ldi": "LDI",
+                "assets_cash": "Cash",
+                "assets_other": "Other Assets",
+                "assets_diversified_growth": "Diversified Growth",
+                "assets_alternatives": "Alternatives",
+                "assets_insurance_contracts": "Insurance Contracts",
+                "current_company_name": "Current Company Name",
+                "sic1": "SIC Code 1",
+                "sic2": "SIC Code 2",
+                "location": "Location",
+                "nature_of_business": "Nature of Business",
+            }
+
+            for field, excel_col in column_map.items():
+                safe_update(field, excel_col)
+
+            # JSON field update helper
+            def update_json_field(field_name, cols):
+                nonlocal changed
+                existing_data = getattr(key_data, field_name) or {}
+                updated_data = dict(existing_data)
+                field_changed = False
+
+                for year_label, excel_col in cols.items():
+                    if excel_col in row and not pd.isna(row[excel_col]):
+                        try:
+                            new_val = float(row[excel_col])
+                            old_val = float(existing_data.get(year_label, 0.0)) if existing_data.get(year_label) is not None else 0.0
+                            if abs(old_val - new_val) > 0.01:  # Allow small float precision differences
+                                print(f"Updating JSON {field_name}[{year_label}]: {old_val} -> {new_val}")
+                                updated_data[year_label] = new_val
+                                field_changed = True
+                        except (ValueError, TypeError):
+                            print(f"Error converting JSON field {field_name}[{year_label}]: old={existing_data.get(year_label)}, new={row[excel_col]}")
+
+                if field_changed:
+                    setattr(key_data, field_name, updated_data)
+                    changed = True
+
+            update_json_field("turnover_data", {
+                "latest": "Turnover Latest Year",
+                "previous": "Turnover Previous Financial Year",
+                "2020": "Turnover 2020",
+                "2019": "Turnover 2019",
+            })
+            update_json_field("profit_data", {
+                "latest": "Profit Latest Year",
+                "previous": "Profit Previous Financial Year",
+                "2020": "Profit 2020",
+                "2019": "Profit 2019",
+            })
+            update_json_field("fair_value_assets", {
+                "latest": "Fair Value Latest",
+                "previous": "Fair Value Previous",
+                "2020": "Fair Value 2020",
+                "2019": "Fair Value 2019",
+            })
+            update_json_field("surplus_data", {
+                "latest": "Surplus Latest",
+                "previous": "Surplus Previous",
+                "2020": "Surplus 2020",
+                "2019": "Surplus 2019",
+            })
+
+            if changed:
+                company.last_modified = datetime.utcnow()
+                update_count += 1
+
+        db.commit()
+
+        return {
+            "message": f"Successfully updated {update_count} companies",
+            "updated_count": update_count,
+            "errors": error_rows if error_rows else None
+        }
+
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Import failed: {str(e)}")

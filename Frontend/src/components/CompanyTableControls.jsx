@@ -13,6 +13,7 @@ import {
   Search as SearchIcon,
   FilterList as FilterIcon,
   Clear as ClearIcon,
+  Upload as UploadIcon,
 } from "@mui/icons-material";
 
 const CompanyTableControls = ({
@@ -21,6 +22,7 @@ const CompanyTableControls = ({
   approvalFilter,
   onApprovalFilterChange,
   onExportClick,
+  onImportClick,
   hasSelectedCompanies,
   isSmall,
   showInactive,
@@ -132,6 +134,21 @@ const CompanyTableControls = ({
             justifyContent: { xs: "center", sm: "flex-end" },
           }}
         >
+          <Button
+            variant="outlined"
+            onClick={() => {
+              console.log('Import button clicked');
+              onImportClick();
+            }}
+            size={isSmall ? "small" : "medium"}
+            startIcon={<UploadIcon />}
+            sx={{
+              width: { xs: "100%", sm: "auto" },
+              whiteSpace: "nowrap",
+            }}
+          >
+            Import Data
+          </Button>
           <Button
             variant="contained"
             onClick={onExportClick}

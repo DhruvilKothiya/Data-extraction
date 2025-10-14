@@ -16,12 +16,14 @@ import FileUploadSection from "../components/FileUploadSection";
 import CompanyTableControls from "../components/CompanyTableControls";
 import CompanyTable from "../components/CompanyTable";
 import ExportDialog from "../components/ExportDialog";
+import KeyFinancialImportDialog from "../components/KeyFinancialImportDialog";
 import DetailDialog from "../components/DetailDialog";
 
 // Hooks
 import { useCompanyData } from "../hooks/useCompanyData";
 import { useFileUpload } from "../hooks/useFileUpload";
 import { useExport } from "../hooks/useExport";
+import { useKeyFinancialImport } from "../hooks/useKeyFinancialImport";
 
 // Utils
 import { filterCompanies } from "../utils/companyFilters";
@@ -91,6 +93,19 @@ const HomePage = () => {
     handleExport,
   } = useExport();
 
+  // Import hook
+  const {
+    importDialogOpen,
+    isUploading,
+    uploadProgress: importUploadProgress,
+    openImportDialog,
+    closeImportDialog,
+    handleImport,
+  } = useKeyFinancialImport();
+
+  // Debug: Log dialog state
+  console.log('Import dialog open:', importDialogOpen);
+
   // Since filtering is now handled server-side, filteredCompanies is just companyData
   const filteredCompanies = companyData;
   const hasSelectedCompanies = companyData.some((c) => c.selected);
@@ -133,6 +148,15 @@ const HomePage = () => {
 
   const handleExportClick = () => {
     handleExport(companyData);
+  };
+
+  const handleImportSuccess = () => {
+    // Refresh company data after successful import
+    fetchCompanyData();
+  };
+
+  const handleImportClick = (file) => {
+    handleImport(file, handleImportSuccess);
   };
 
   // Remove full-page loader - now handled within CompanyTable
@@ -206,6 +230,7 @@ const HomePage = () => {
                 approvalFilter={approvalFilter}
                 onApprovalFilterChange={handleApprovalFilterChangeLocal}
                 onExportClick={openExportDialog}
+                onImportClick={openImportDialog}
                 hasSelectedCompanies={hasSelectedCompanies}
                 showInactive={showInactive}
                 onShowInactiveChange={handleShowInactiveChange}
@@ -306,6 +331,15 @@ const HomePage = () => {
             setIncludeSummaryNotes={setIncludeSummaryNotes}
             includeCompanyCharges={includeCompanyCharges}
             setIncludeCompanyCharges={setIncludeCompanyCharges}
+            isSmall={isSmall}
+          />
+
+          <KeyFinancialImportDialog
+            open={importDialogOpen}
+            onClose={closeImportDialog}
+            onImport={handleImportClick}
+            isUploading={isUploading}
+            uploadProgress={importUploadProgress}
             isSmall={isSmall}
           />
         </Box>
