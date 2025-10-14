@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Date, Numeric,JSON
+from sqlalchemy import Column, Integer, String, Date, Numeric, Float, JSON
 from app.db.base import Base
 
 class KeyFinancialData(Base):
@@ -40,22 +40,22 @@ class KeyFinancialData(Base):
     Status_of_Defined_Benefit_Arrangement_3 = Column(String(100), nullable=True)
 
 
-    employer_contrib_latest_year = Column(Numeric(20, 1), nullable=True)
-    employer_contrib_previous_year = Column(Numeric(20, 1), nullable=True)
-    benefits_paid = Column(Numeric(20, 1), nullable=True)
-    expenses_paid_latest_year = Column(Numeric(20, 1), nullable=True)
-    expenses_paid_previous_year = Column(Numeric(20, 1), nullable=True)
-    defined_contrib_paid = Column(Numeric(20, 1), nullable=True)
+    employer_contrib_latest_year = Column(Float, nullable=True)
+    employer_contrib_previous_year = Column(Float, nullable=True)
+    benefits_paid = Column(Float, nullable=True)
+    expenses_paid_latest_year = Column(Float, nullable=True)
+    expenses_paid_previous_year = Column(Float, nullable=True)
+    defined_contrib_paid = Column(Float, nullable=True)
 
-    assets_equities = Column(Numeric(20, 1), nullable=True)
-    assets_bonds = Column(Numeric(20, 1), nullable=True)
-    assets_real_estate = Column(Numeric(20, 1), nullable=True)
-    assets_ldi = Column(Numeric(20, 1), nullable=True)
-    assets_cash = Column(Numeric(20, 1), nullable=True)
-    assets_other = Column(Numeric(20, 1), nullable=True)
-    assets_diversified_growth = Column(Numeric(20, 1), nullable=True)
-    assets_alternatives = Column(Numeric(20, 1), nullable=True)
-    assets_insurance_contracts = Column(Numeric(20, 1), nullable=True)
+    assets_equities = Column(Float, nullable=True)
+    assets_bonds = Column(Float, nullable=True)
+    assets_real_estate = Column(Float, nullable=True)
+    assets_ldi = Column(Float, nullable=True)
+    assets_cash = Column(Float, nullable=True)
+    assets_other = Column(Float, nullable=True)
+    assets_diversified_growth = Column(Float, nullable=True)
+    assets_alternatives = Column(Float, nullable=True)
+    assets_insurance_contracts = Column(Float, nullable=True)
     
     current_company_name = Column(String(255), nullable=True)
     sic1 = Column(Integer, nullable=True)
