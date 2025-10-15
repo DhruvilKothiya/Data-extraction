@@ -1101,9 +1101,16 @@ def import_key_financial_data(
         raise HTTPException(status_code=400, detail="Only Excel files (.xlsx, .xls) are supported")
     
     try:
+        # Read Excel with dtype specification to preserve leading zeros
         contents = file.file.read()
-        excel_data = pd.read_excel(BytesIO(contents), sheet_name="Main Data")
-        print("excel_data",excel_data)
+        excel_data = pd.read_excel(
+            BytesIO(contents), 
+            sheet_name="Main Data",
+            dtype={
+                'Company Registered Number': str,  # Force as string to preserve leading zeros
+            }
+        )
+        print("excel_data", excel_data)
 
         update_count = 0
         error_rows = []
@@ -1126,7 +1133,6 @@ def import_key_financial_data(
             key_data = db.query(KeyFinancialData).filter(
                 KeyFinancialData.id == company.key_financial_data_id
             ).first()
-            print("key_data",key_data)
 
             if not key_data:
                 error_rows.append(f"Row {index + 2}: No financial data for '{company_name}'")
@@ -1156,6 +1162,14 @@ def import_key_financial_data(
                                 changed = True
                         except (ValueError, TypeError):
                             print(f"Error converting {field_name} values to float: old={old_value}, new={new_value}")
+                    elif field_name == 'company_registered_number':
+                        # Special handling for registration number to preserve leading zeros
+                        new_str = str(new_value).strip()
+                        old_str = str(old_value).strip() if old_value is not None else ""
+                        if old_str != new_str:
+                            print(f"Updating {field_name}: '{old_str}' -> '{new_str}'")
+                            setattr(key_data, field_name, new_str)
+                            changed = True
                     else:
                         # For string/other fields, use string comparison
                         old_str = str(old_value) if old_value is not None else ""
@@ -1236,27 +1250,28 @@ def import_key_financial_data(
                     setattr(key_data, field_name, updated_data)
                     changed = True
 
+            # CORRECTED: Use year labels instead of "latest" and "previous"
             update_json_field("turnover_data", {
-                "latest": "Turnover Latest Year",
-                "previous": "Turnover Previous Financial Year",
+                "2024": "Turnover Latest Year",
+                "2023": "Turnover Previous Financial Year",
                 "2020": "Turnover 2020",
                 "2019": "Turnover 2019",
             })
             update_json_field("profit_data", {
-                "latest": "Profit Latest Year",
-                "previous": "Profit Previous Financial Year",
+                "2024": "Profit Latest Year",
+                "2023": "Profit Previous Financial Year",
                 "2020": "Profit 2020",
                 "2019": "Profit 2019",
             })
             update_json_field("fair_value_assets", {
-                "latest": "Fair Value Latest",
-                "previous": "Fair Value Previous",
+                "2024": "Fair Value Latest",
+                "2023": "Fair Value Previous",
                 "2020": "Fair Value 2020",
                 "2019": "Fair Value 2019",
             })
             update_json_field("surplus_data", {
-                "latest": "Surplus Latest",
-                "previous": "Surplus Previous",
+                "2024": "Surplus Latest",
+                "2023": "Surplus Previous",
                 "2020": "Surplus 2020",
                 "2019": "Surplus 2019",
             })

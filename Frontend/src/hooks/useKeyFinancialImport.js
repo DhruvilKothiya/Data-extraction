@@ -53,7 +53,7 @@ export const useKeyFinancialImport = () => {
       const { message, updated_count, errors } = response.data;
 
       // Show success message
-      toast.success(`${message}. Updated ${updated_count} companies.`);
+      toast.success(`Successfully updated companies. You can check it in the key financial data section.`);
 
       // Show errors if any
       if (errors && errors.length > 0) {
