@@ -255,7 +255,13 @@ def upload_file(
         if not file.filename.endswith(".csv"):
             raise HTTPException(status_code=400, detail="Only CSV files are supported")
 
-        contents = file.file.read().decode("utf-8")
+        # contents = file.file.read().decode("utf-8")
+        
+        try:
+            contents = file.file.read().decode("utf-8")
+        except UnicodeDecodeError:
+            file.file.seek(0)
+            contents = file.file.read().decode("cp1252")
         csv_reader = csv.DictReader(StringIO(contents))
         required_fields = ["Company", "Address1", "Address2", "Address3", "City", "County"]
 
