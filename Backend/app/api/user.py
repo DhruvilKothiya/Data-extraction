@@ -1297,3 +1297,92 @@ def import_key_financial_data(
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Import failed: {str(e)}")
+    
+@router.delete("/delete-companies")
+def delete_companies(
+    data: dict = Body(...),
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Delete selected companies and all related data with cascade deletion"""
+    company_ids = data.get("ids", [])
+    
+    if not company_ids:
+        raise HTTPException(status_code=400, detail="No companies selected for deletion")
+    
+    try:
+        companies = db.query(CompanyData).filter(CompanyData.id.in_(company_ids)).all()
+        
+        if not companies:
+            raise HTTPException(status_code=404, detail="No companies found")
+        
+        registration_numbers = []
+        key_financial_ids = []
+        company_names = []
+        
+        for company in companies:
+            company_names.append(company.company_name)
+            
+            if company.key_financial_data_id:
+                key_financial_ids.append(company.key_financial_data_id)
+                
+                key_data = db.query(KeyFinancialData).filter(
+                    KeyFinancialData.id == company.key_financial_data_id
+                ).first()
+                
+                if key_data and key_data.company_registered_number:
+                    registration_numbers.append(key_data.company_registered_number)
+        
+        deleted_counts = {}
+        
+        if registration_numbers:
+            
+            people_deleted = db.query(PeopleData).filter(
+                PeopleData.company_registered_number.in_(registration_numbers)
+            ).delete(synchronize_session=False)
+            deleted_counts['people'] = people_deleted
+            
+            summary_deleted = db.query(SummaryNotes).filter(
+                SummaryNotes.company_registered_number.in_(registration_numbers)
+            ).delete(synchronize_session=False)
+            deleted_counts['summaries'] = summary_deleted
+            
+            pdf_deleted = db.query(CompanyPDFs).filter(
+                CompanyPDFs.company_registered_number.in_(registration_numbers)
+            ).delete(synchronize_session=False)
+            deleted_counts['pdfs'] = pdf_deleted
+            
+            charges_deleted = db.query(CompanyCharges).filter(
+                CompanyCharges.company_registered_number.in_(registration_numbers)
+            ).delete(synchronize_session=False)
+            deleted_counts['charges'] = charges_deleted
+        
+        if company_names:
+            csv_deleted = db.query(CSVFileData).filter(
+                CSVFileData.company_name.in_(company_names)
+            ).delete(synchronize_session=False)
+            deleted_counts['csv_records'] = csv_deleted
+        
+        companies_deleted = db.query(CompanyData).filter(
+            CompanyData.id.in_(company_ids)
+        ).delete(synchronize_session=False)
+        deleted_counts['companies'] = companies_deleted
+
+        if key_financial_ids:
+            key_data_deleted = db.query(KeyFinancialData).filter(
+                KeyFinancialData.id.in_(key_financial_ids)
+            ).delete(synchronize_session=False)
+            deleted_counts['key_financial'] = key_data_deleted
+        
+        db.commit()
+        
+        return {
+            "message": f"Successfully deleted {companies_deleted} companies and all related data",
+            "deleted_count": companies_deleted,
+            "details": deleted_counts
+        }
+        
+    except Exception as e:
+        db.rollback()
+        print(f"Error during deletion: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Deletion failed: {str(e)}")                                                

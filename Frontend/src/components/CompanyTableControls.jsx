@@ -14,6 +14,7 @@ import {
   FilterList as FilterIcon,
   Clear as ClearIcon,
   Upload as UploadIcon,
+  Delete as DeleteIcon,
 } from "@mui/icons-material";
 
 const CompanyTableControls = ({
@@ -23,6 +24,7 @@ const CompanyTableControls = ({
   onApprovalFilterChange,
   onExportClick,
   onImportClick,
+  onDeleteClick,
   hasSelectedCompanies,
   isSmall,
   showInactive,
@@ -134,6 +136,20 @@ const CompanyTableControls = ({
             justifyContent: { xs: "center", sm: "flex-end" },
           }}
         >
+          <Button
+            variant="outlined"
+            color="error"
+            onClick={onDeleteClick}
+            disabled={!hasSelectedCompanies}
+            size={isSmall ? "small" : "medium"}
+            startIcon={<DeleteIcon />}
+            sx={{
+              width: { xs: "100%", sm: "auto" },
+              whiteSpace: "nowrap",
+            }}
+          >
+            Delete
+          </Button>
           <Button
             variant="outlined"
             onClick={() => {

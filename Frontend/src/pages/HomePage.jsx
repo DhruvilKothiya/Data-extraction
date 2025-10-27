@@ -8,6 +8,12 @@ import {
   Card,
   CardContent,
   CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  Typography,
 } from "@mui/material";
 
 // Components
@@ -43,6 +49,7 @@ const HomePage = () => {
   const [openDetailDialog, setOpenDetailDialog] = useState(false);
   const [detailType, setDetailType] = useState("");
   const [selectedCompany, setSelectedCompany] = useState(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   // Custom hooks
   const {
@@ -67,7 +74,8 @@ const HomePage = () => {
     handleApprovalFilterChange,
     sortOrder,
     handleSortOrderChange,
-    handleClearSearch
+    handleClearSearch,
+    handleDeleteCompanies,
   } = useCompanyData();
 
   const {
@@ -102,9 +110,6 @@ const HomePage = () => {
     closeImportDialog,
     handleImport,
   } = useKeyFinancialImport();
-
-  // Debug: Log dialog state
-  console.log('Import dialog open:', importDialogOpen);
 
   // Since filtering is now handled server-side, filteredCompanies is just companyData
   const filteredCompanies = companyData;
@@ -159,7 +164,19 @@ const HomePage = () => {
     handleImport(file, handleImportSuccess);
   };
 
-  // Remove full-page loader - now handled within CompanyTable
+  // Delete handlers
+  const handleDeleteClick = () => {
+    const selectedCount = companyData.filter(c => c.selected).length;
+    if (selectedCount === 0) {
+      return; // Button should be disabled, but just in case
+    }
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    setDeleteDialogOpen(false);
+    await handleDeleteCompanies();
+  };
 
   return (
     <Box
@@ -231,6 +248,7 @@ const HomePage = () => {
                 onApprovalFilterChange={handleApprovalFilterChangeLocal}
                 onExportClick={openExportDialog}
                 onImportClick={openImportDialog}
+                onDeleteClick={handleDeleteClick}
                 hasSelectedCompanies={hasSelectedCompanies}
                 showInactive={showInactive}
                 onShowInactiveChange={handleShowInactiveChange}
@@ -342,6 +360,77 @@ const HomePage = () => {
             uploadProgress={importUploadProgress}
             isSmall={isSmall}
           />
+
+          {/* Delete Confirmation Dialog */}
+          <Dialog
+            open={deleteDialogOpen}
+            onClose={() => setDeleteDialogOpen(false)}
+            maxWidth="sm"
+            fullWidth
+          >
+            <DialogTitle>Confirm Deletion</DialogTitle>
+            <DialogContent>
+              <Typography variant="body1" gutterBottom>
+                Are you sure you want to delete{" "}
+                <strong>
+                  {companyData.filter((c) => c.selected).length}
+                </strong>{" "}
+                selected{" "}
+                {companyData.filter((c) => c.selected).length === 1
+                  ? "company"
+                  : "companies"}
+                ?
+              </Typography>
+              <Typography
+                variant="body2"
+                color="error"
+                sx={{ mt: 2, fontWeight: 500 }}
+              >
+                This action cannot be undone. The following data will be
+                permanently deleted:
+              </Typography>
+              <Box component="ul" sx={{ mt: 1, pl: 2 }}>
+                <li>
+                  <Typography variant="body2">Company information</Typography>
+                </li>
+                <li>
+                  <Typography variant="body2">
+                    Key financial data
+                  </Typography>
+                </li>
+                <li>
+                  <Typography variant="body2">People data</Typography>
+                </li>
+                <li>
+                  <Typography variant="body2">Summary notes</Typography>
+                </li>
+                <li>
+                  <Typography variant="body2">PDF links</Typography>
+                </li>
+                <li>
+                  <Typography variant="body2">Company charges</Typography>
+                </li>
+                <li>
+                  <Typography variant="body2">CSV file data</Typography>
+                </li>
+              </Box>
+            </DialogContent>
+            <DialogActions sx={{ px: 3, pb: 2 }}>
+              <Button
+                onClick={() => setDeleteDialogOpen(false)}
+                variant="outlined"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleDeleteConfirm}
+                color="error"
+                variant="contained"
+              >
+                Delete
+              </Button>
+            </DialogActions>
+          </Dialog>
         </Box>
       </Box>
     </Box>

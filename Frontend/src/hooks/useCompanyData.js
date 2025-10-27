@@ -287,6 +287,29 @@ export const useCompanyData = () => {
     );
   };
 
+  const handleDeleteCompanies = async () => {
+  const selectedIds = companyData.filter(c => c.selected).map(c => c.id);
+  
+  if (selectedIds.length === 0) {
+    toast.warning("No companies selected for deletion");
+    return;
+  }
+
+  try {
+    const response = await axiosInstance.delete('/delete-companies', {
+      data: { ids: selectedIds }
+    });
+    
+    toast.success(response.data.message);
+    
+    // Refresh the data after deletion
+    fetchCompanyData(currentPage, searchTerm, sortOrder, showInactive === 'yes', 'all');
+  } catch (error) {
+    console.error("Error deleting companies:", error);
+    toast.error(error.response?.data?.detail || "Failed to delete companies");
+  }
+};
+
   // Cleanup function for timers
   useEffect(() => {
     return () => {
@@ -341,6 +364,7 @@ export const useCompanyData = () => {
     handleApprovalFilterChange,
     handleSortOrderChange,
     handleClearSearch,
+    handleDeleteCompanies,
     sortOrder
   };
 };
