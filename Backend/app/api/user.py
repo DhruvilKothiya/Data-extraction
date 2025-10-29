@@ -9,6 +9,7 @@ from io import BytesIO
 from decouple import config 
 from app.core.config import REPROCESS_COMPANY_API,PROCESS_COMPANY_API
 from fastapi import APIRouter, Depends, HTTPException,Request,File, UploadFile,Response
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from app.db.session import SessionLocal
 from app.utils.jwt import create_access_token, decode_token, get_current_user
@@ -308,8 +309,6 @@ def upload_file(
                 print(api_response.status_code, api_response.json());
            
                 if api_response.status_code == 200:
-                    # Update status to "Done" after successful ML API call
-                    # company_record.status = "Done"
                     
                     csv_record = CSVFileData(
                         company_name=company_name,
@@ -377,21 +376,7 @@ def reprocess_company(
         )
         print(f"API response for {company.company_name}: {api_response.status_code}")
         if api_response.status_code == 200:
-            ml_data = api_response.json()
-           
-            # Update only if data is returned
-            if ml_data:
-                if 'turnover_data' in ml_data:
-                    key_data.turnover_data = ml_data['turnover_data']
-                if 'fair_value_assets' in ml_data:
-                    key_data.fair_value_assets = ml_data['fair_value_assets']
-                if 'profit_data' in ml_data:
-                    key_data.profit_data = ml_data['profit_data']
-                if 'surplus_data' in ml_data:
-                    key_data.surplus_data = ml_data['surplus_data']
-                # Add more fields as needed
-
-                db.commit()
+            pass
         else:
             company.status = "Not Started"
             print(f"API failed for {company.company_name}: {api_response.status_code}")
@@ -407,6 +392,80 @@ def reprocess_company(
         "message": f"Company reprocessed with status {company.status}",
         "new_status": company.status
     }
+
+@router.post("/reprocess-companies-bulk")
+def reprocess_companies_bulk(
+    payload: dict,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+
+    company_ids = payload.get("company_ids")
+    if not company_ids or not isinstance(company_ids, list):
+        raise HTTPException(status_code=400, detail="company_ids must be a non-empty list")
+
+    companies = db.query(CompanyData).filter(CompanyData.id.in_(company_ids)).all()
+    if not companies:
+        raise HTTPException(status_code=404, detail="No valid companies found")
+
+    registration_numbers = []
+    for company in companies:
+        db.refresh(company)
+        key_data = (
+            db.query(KeyFinancialData)
+            .filter(KeyFinancialData.id == company.key_financial_data_id)
+            .first()
+        )
+
+        if not key_data or not key_data.company_registered_number:
+            company.status = "Not Started"
+            continue
+
+        registration_number = key_data.company_registered_number
+        registration_numbers.append(registration_number)
+        company.status = "Processing"
+
+    db.commit()
+
+    if not registration_numbers:
+        raise HTTPException(status_code=400, detail="No valid registration numbers found")
+
+    try:
+        print("before processing api call")
+        payload_to_send = {"registration_ids": registration_numbers}
+        api_response = requests.post(REPROCESS_COMPANY_API, json=payload_to_send)
+        print("after processing api call")
+
+        if api_response.status_code != 200:
+            for company in companies:
+                company.status = "Not Started"
+            db.commit()
+            raise HTTPException(
+                status_code=502,
+                detail=f"ML service failed with status {api_response.status_code}",
+            )
+
+    except requests.exceptions.RequestException as e:
+        for company in companies:
+            company.status = "Not Started"
+        db.commit()
+        raise HTTPException(status_code=500, detail=f"Failed to reach ML service: {str(e)}")
+    except Exception as e:
+        for company in companies:
+            company.status = "Not Started"
+        db.commit()
+        raise HTTPException(status_code=500, detail=f"Bulk reprocess failed: {str(e)}")
+
+    final_status = "Processing"
+    db.commit()
+
+    return JSONResponse(
+        content={
+            "message": f"Reprocess triggered successfully for {len(registration_numbers)} companies",
+            "new_status": final_status,
+        },
+        status_code=200
+    )
 
 @router.get("/key-financial-data/{company_id}")
 def get_key_financial_data(

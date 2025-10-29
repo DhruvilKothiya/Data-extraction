@@ -76,6 +76,7 @@ const HomePage = () => {
     handleSortOrderChange,
     handleClearSearch,
     handleDeleteCompanies,
+    handleBulkRerun,
   } = useCompanyData();
 
   const {
@@ -178,6 +179,15 @@ const HomePage = () => {
     await handleDeleteCompanies();
   };
 
+  // Add a handler for the re-run button click:
+  const handleRerunClick = async () => {
+    const selectedCount = companyData.filter((c) => c.selected).length;
+    if (selectedCount === 0) {
+      return;
+    }
+    await handleBulkRerun();
+  };
+
   return (
     <Box
       sx={{
@@ -249,6 +259,7 @@ const HomePage = () => {
                 onExportClick={openExportDialog}
                 onImportClick={openImportDialog}
                 onDeleteClick={handleDeleteClick}
+                onRerunClick={handleRerunClick} 
                 hasSelectedCompanies={hasSelectedCompanies}
                 showInactive={showInactive}
                 onShowInactiveChange={handleShowInactiveChange}

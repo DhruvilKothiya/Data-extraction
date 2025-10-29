@@ -15,6 +15,7 @@ import {
   Clear as ClearIcon,
   Upload as UploadIcon,
   Delete as DeleteIcon,
+  Refresh as RefreshIcon,
 } from "@mui/icons-material";
 
 const CompanyTableControls = ({
@@ -30,6 +31,7 @@ const CompanyTableControls = ({
   showInactive,
   onShowInactiveChange,
   onClearSearch,
+  onRerunClick,
 }) => {
   return (
     <Box
@@ -152,8 +154,22 @@ const CompanyTableControls = ({
           </Button>
           <Button
             variant="outlined"
+            color="primary"
+            onClick={onRerunClick}
+            disabled={!hasSelectedCompanies}
+            size={isSmall ? "small" : "medium"}
+            startIcon={<RefreshIcon />}
+            sx={{
+              width: { xs: "100%", sm: "auto" },
+              whiteSpace: "nowrap",
+            }}
+          >
+            Re-run
+          </Button>
+          <Button
+            variant="outlined"
             onClick={() => {
-              console.log('Import button clicked');
+              console.log("Import button clicked");
               onImportClick();
             }}
             size={isSmall ? "small" : "medium"}

@@ -37,10 +37,10 @@ export const useCompanyData = () => {
   const fetchCompanyData = async (page = 1, search = null, order='asc', show_inactive=false, approval_filter='all') => {
     try {
       setDataLoaded(false);
-      
+
       // Use passed search param or current searchTerm state
       const searchQuery = search !== null ? search : searchTerm;
-      
+
       const params = {
         page: page,
         per_page: 100,
@@ -48,14 +48,14 @@ export const useCompanyData = () => {
         show_inactive: show_inactive,
         approval_filter: approval_filter
       };
-      
+
       // Only add search param if there's a search term
       if (searchQuery && searchQuery.trim()) {
         params.search = searchQuery.trim();
       }
-      
+
       const response = await axiosInstance.get('/company-data', { params });
-   
+
       setCompanyData(
         response.data.data.map((company) => ({
           ...company,
@@ -75,15 +75,15 @@ export const useCompanyData = () => {
   const handleSearchChange = (event) => {
     const value = event.target.value;
     dispatch(setSearchTerm(value));
-    
+
     // Clear existing timer
     if (searchTimerRef.current) {
       clearTimeout(searchTimerRef.current);
     }
-    
+
     // Set new timer for debounced search
     searchTimerRef.current = setTimeout(() => {
-      dispatch(setCurrentPage(1)); 
+      dispatch(setCurrentPage(1));
       fetchCompanyData(1, value, sortOrder, showInactive === 'yes', 'all');
     }, 500); // 500ms debounce
   };
@@ -98,11 +98,8 @@ export const useCompanyData = () => {
 
     // if value is "yes" → pass false, otherwise true
     const showInactive = value === "yes" ? true : false;
-    console.log(showInactive,"Show ina")
-    fetchCompanyData(currentPage, null, sortOrder, showInactive, 'all')
+    fetchCompanyData(currentPage, null, sortOrder, showInactive, "all");
     dispatch(setShowInactive(value));
-    console.log("fetchdata",fetchCompanyData)
-
   };
 
   const handleApprovalFilterChange = (approvalFilter) => {
@@ -118,8 +115,7 @@ export const useCompanyData = () => {
   const handleRerunAI = async (companyId) => {
     try {
       setRerunLoading((prev) => ({ ...prev, [companyId]: true }));
-      
-      // Immediately update status to "Not Started" in UI
+
       setCompanyData((prev) =>
         prev.map((company) =>
           company.id === companyId
@@ -127,7 +123,7 @@ export const useCompanyData = () => {
             : company
         )
       );
-      
+
       const response = await axiosInstance.post(
         `/reprocess-company/${companyId}`,
         {} // Empty body since registration number is retrieved from DB
@@ -159,13 +155,69 @@ export const useCompanyData = () => {
     }
   };
 
+  const handleBulkRerun = async () => {
+    const selectedCompanies = companyData.filter((c) => c.selected);
+
+    if (selectedCompanies.length === 0) {
+      toast.warning("No companies selected for re-run");
+      return;
+    }
+
+    try {
+      setRerunLoading((prev) => {
+        const updated = { ...prev };
+        selectedCompanies.forEach((c) => (updated[c.id] = true));
+        return updated;
+      });
+
+      setCompanyData((prev) =>
+        prev.map((company) =>
+          company.selected ? { ...company, status: "Not Started" } : company
+        )
+      );
+
+      const response = await axiosInstance.post(`/reprocess-companies-bulk`, {
+        company_ids: selectedCompanies.map((c) => c.id),
+      });
+
+      setCompanyData((prev) =>
+        prev.map((company) =>
+          company.selected
+            ? { ...company, status: response.data.new_status || "Processing" }
+            : company
+        )
+      );
+
+      toast.success(
+        `Re-run started for ${selectedCompanies.length} ${
+          selectedCompanies.length === 1 ? "company" : "companies"
+        }`
+      );
+    } catch (error) {
+      console.error("Error during bulk re-run:", error);
+      toast.error("Failed to start re-run process");
+
+      setCompanyData((prev) =>
+        prev.map((company) =>
+          company.selected ? { ...company, status: "Not Started" } : company
+        )
+      );
+    } finally {
+      setRerunLoading((prev) => {
+        const updated = { ...prev };
+        selectedCompanies.forEach((c) => (updated[c.id] = false));
+        return updated;
+      });
+    }
+  };
+
   const handleRegistrationUpdate = async (companyId, newNumber) => {
     try {
       const response = await axiosInstance.put(
         `/update-registration-number/${companyId}`,
         { registration_number: newNumber }
       );
-  
+
       setCompanyData((prev) =>
         prev.map((company) =>
           company.id === companyId
@@ -179,13 +231,13 @@ export const useCompanyData = () => {
             : company
         )
       );
-  
+
       setEditedRegistrations((prev) => {
         const newState = { ...prev };
         delete newState[companyId];
         return newState;
       });
-  
+
       toast.success("Registration number updated");
     } catch (err) {
       console.error(err);
@@ -289,26 +341,26 @@ export const useCompanyData = () => {
 
   const handleDeleteCompanies = async () => {
   const selectedIds = companyData.filter(c => c.selected).map(c => c.id);
-  
-  if (selectedIds.length === 0) {
-    toast.warning("No companies selected for deletion");
-    return;
-  }
 
-  try {
+    if (selectedIds.length === 0) {
+      toast.warning("No companies selected for deletion");
+      return;
+    }
+
+    try {
     const response = await axiosInstance.delete('/delete-companies', {
       data: { ids: selectedIds }
-    });
-    
-    toast.success(response.data.message);
-    
-    // Refresh the data after deletion
+      });
+
+      toast.success(response.data.message);
+
+      // Refresh the data after deletion
     fetchCompanyData(currentPage, searchTerm, sortOrder, showInactive === 'yes', 'all');
-  } catch (error) {
-    console.error("Error deleting companies:", error);
-    toast.error(error.response?.data?.detail || "Failed to delete companies");
-  }
-};
+    } catch (error) {
+      console.error("Error deleting companies:", error);
+      toast.error(error.response?.data?.detail || "Failed to delete companies");
+    }
+  };
 
   // Cleanup function for timers
   useEffect(() => {
@@ -365,6 +417,7 @@ export const useCompanyData = () => {
     handleSortOrderChange,
     handleClearSearch,
     handleDeleteCompanies,
-    sortOrder
+    handleBulkRerun,
+    sortOrder,
   };
 };
